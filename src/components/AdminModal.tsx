@@ -5,7 +5,7 @@ import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { CustomVehicleService, CustomVehicle } from '../services/customVehicleService';
 import { ImgurService } from '../services/imgurService';
 import { CloudImageService } from '../services/cloudImageService';
-import { getSupabaseAnonKey, setSupabaseAnonKey, SUPABASE_PROJECT_REF, SupabaseService } from '../services/supabaseService';
+
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -29,58 +29,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [imgurError, setImgurError] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Supabase Cloud state
-  const [supabaseKey, setSupabaseKey] = useState<string>(() => getSupabaseAnonKey());
-  const [showSqlGuide, setShowSqlGuide] = useState(false);
-  const [supabaseTestStatus, setSupabaseTestStatus] = useState<string>('');
-  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
 
-  const handleSaveSupabaseKey = () => {
-    playMechanicalClick('click');
-    setSupabaseAnonKey(supabaseKey);
-    CustomVehicleService.syncWithSupabase();
-    alert('Chave Anon do Supabase salva com sucesso! O site agora sincronizará os carros no banco de dados da nuvem.');
-  };
-
-  const handleTestSupabase = async () => {
-    if (!supabaseKey.trim()) {
-      alert('Por favor, insira primeiro a sua Supabase Anon Key no campo indicado.');
-      return;
-    }
-
-    try {
-      playMechanicalClick('click');
-      setIsTestingSupabase(true);
-      setSupabaseTestStatus('🔍 Validando leitura, gravação (RLS) e remoção...');
-
-      setSupabaseAnonKey(supabaseKey);
-
-      const testVehicle = {
-        id: `test-rls-${Date.now()}`,
-        shareId: 'RLS-TEST',
-        title: 'Teste de Validação RLS',
-        subtitle: 'Status da Conexão',
-        image: '/assets/images/vw-fusca-cal-style-1968.jpg',
-        year: '2026',
-        engine: 'Test Engine',
-        transmission: 'Manual',
-      };
-
-      const inserted = await SupabaseService.insertVehicle(testVehicle);
-      if (!inserted) {
-        throw new Error('Falha no INSERT. Verifique se rodou o script SQL no Supabase para liberar as políticas de segurança (RLS).');
-      }
-
-      await SupabaseService.deleteVehicle(testVehicle.id);
-
-      setSupabaseTestStatus('✅ Conexão, Tabela e Políticas RLS 100% Validadas e Prontas!');
-      playMechanicalClick('modal');
-    } catch (err: any) {
-      setSupabaseTestStatus(`❌ Erro: ${err?.message || 'Falha na conexão'}`);
-    } finally {
-      setIsTestingSupabase(false);
-    }
-  };
 
   // Form state for new vehicle
   const [title, setTitle] = useState('');
@@ -374,91 +323,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                   </button>
                 </div>
 
-                {/* Supabase Cloud Connection Card */}
-                <div className="bg-surface-container-high/60 border border-emerald-500/30 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="material-symbols-outlined text-emerald-400 text-[20px]">database</span>
-                      <span className="font-headline-md text-xs text-parchment font-bold">
-                        Banco de Dados na Nuvem (Supabase: {SUPABASE_PROJECT_REF})
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowSqlGuide(!showSqlGuide)}
-                      className="text-[11px] font-label-caps text-secondary underline cursor-pointer"
-                    >
-                      {showSqlGuide ? 'Ocultar Script SQL' : 'Ver Script SQL 1-Click'}
-                    </button>
-                  </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="password"
-                      value={supabaseKey}
-                      onChange={(e) => setSupabaseKey(e.target.value)}
-                      placeholder="Cole aqui a sua Supabase Anon Key (Project Settings -> API -> anon public)"
-                      className="flex-1 px-3 py-1.5 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs font-mono focus:outline-none focus:border-emerald-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveSupabaseKey}
-                      className="bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-400/50 text-emerald-200 font-label-caps text-xs px-4 py-1.5 rounded-xl transition-all cursor-pointer font-bold shrink-0"
-                    >
-                      Salvar Chave Supabase
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 border-t border-surface-variant/30">
-                    <button
-                      type="button"
-                      disabled={isTestingSupabase}
-                      onClick={handleTestSupabase}
-                      className="bg-amber-900/30 hover:bg-amber-800/50 border border-amber-500/50 text-amber-200 font-label-caps text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-bold flex items-center space-x-1.5 disabled:opacity-50"
-                    >
-                      <span className={`material-symbols-outlined text-[15px] ${isTestingSupabase ? 'animate-spin' : ''}`}>
-                        {isTestingSupabase ? 'sync' : 'verified'}
-                      </span>
-                      <span>{isTestingSupabase ? 'Validando...' : '⚡ Validar Conexão & Políticas RLS'}</span>
-                    </button>
-
-                    {supabaseTestStatus && (
-                      <span className={`text-[11px] font-mono font-bold ${supabaseTestStatus.startsWith('✅') ? 'text-emerald-400' : 'text-amber-300'}`}>
-                        {supabaseTestStatus}
-                      </span>
-                    )}
-                  </div>
-
-                  {showSqlGuide && (
-                    <div className="mt-2 p-3 bg-surface-container-lowest border border-surface-variant/30 rounded-xl space-y-2 text-xs">
-                      <p className="text-on-surface-variant font-label-caps text-[11px]">
-                        Execute este script no <strong>SQL Editor</strong> do Supabase (projeto <code>{SUPABASE_PROJECT_REF}</code>):
-                      </p>
-                      <pre className="p-2.5 bg-black/60 rounded-lg text-emerald-300 font-mono text-[10px] overflow-x-auto select-all">
-{`CREATE TABLE IF NOT EXISTS public.custom_vehicles (
-  id TEXT PRIMARY KEY,
-  share_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  subtitle TEXT,
-  image TEXT,
-  year TEXT,
-  engine TEXT,
-  transmission TEXT,
-  color TEXT,
-  power TEXT,
-  condition TEXT,
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.custom_vehicles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.custom_vehicles FOR SELECT USING (true);
-CREATE POLICY "Allow public insert access" ON public.custom_vehicles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public delete access" ON public.custom_vehicles FOR DELETE USING (true);`}
-                      </pre>
-                    </div>
-                  )}
-                </div>
 
                 {successMsg && (
                   <div className="p-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-label-caps flex items-center space-x-2">
