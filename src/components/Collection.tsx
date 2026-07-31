@@ -1,0 +1,754 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { playMechanicalClick } from '../utils/audio';
+import { useLanguage } from '../i18n/LanguageContext';
+import { Translations } from '../i18n/translations';
+import { use3DTilt } from '../hooks/use3DTilt';
+import { CustomVehicleService } from '../services/customVehicleService';
+
+interface CarItem {
+  id: string;
+  shareId: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  year?: string;
+  engine?: string;
+  transmission?: string;
+  description?: string;
+}
+
+const COLLECTION_ITEMS: CarItem[] = [
+  {
+    id: 'porsche-911',
+    shareId: 'SRL-911-1973',
+    title: 'Porsche 911 Classic',
+    subtitle: 'Matching Numbers • 1973',
+    year: '1973',
+    engine: '2.4L Flat-6 Boxer',
+    transmission: 'Manual 5 Marchas',
+    image: '/assets/images/porsche-911-classic-1973.jpg',
+  },
+  {
+    id: 'vw-kombi',
+    shareId: 'SRL-KMB-1970',
+    title: 'VW Kombi Corujinha',
+    subtitle: 'Restored Heritage • 1970',
+    year: '1970',
+    engine: '1500cc Air-Cooled',
+    transmission: 'Manual 4 Marchas',
+    image: '/assets/images/vw-kombi-corujinha-1970.jpg',
+  },
+  {
+    id: 'vw-fusca-cal',
+    shareId: 'SRL-FSC-1968',
+    title: 'VW Fusca Cal Style',
+    subtitle: 'Air Cooled Custom • 1968',
+    year: '1968',
+    engine: '1600cc Dupla Carburação',
+    transmission: 'EMPI Rápida 4 Marchas',
+    image: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  },
+  {
+    id: 'aero-willys',
+    shareId: 'SRL-AWL-1967',
+    title: 'Aero Willys',
+    subtitle: 'Original Impecável • 1967',
+    year: '1967',
+    engine: '2600 6 Cilindros em Linha',
+    transmission: 'Manual 4 Marchas Coluna',
+    image: '/assets/images/aero-willys-1967.jpg',
+  },
+  {
+    id: 'aircooled-engine',
+    shareId: 'SRL-BOX-767',
+    title: 'Preparação Air Cooled',
+    subtitle: 'Box 767 Restauração • Custom',
+    year: 'High Performance',
+    engine: 'Boxer Air Cooled Sob Medida',
+    transmission: 'Relação Trabalhada',
+    image: '/assets/images/aircooled-box-767.jpg',
+  },
+];
+
+interface CollectionProps {
+  onSelectCarForInquiry?: (carName: string) => void;
+  onOpenDetail?: (vehicleId: string) => void;
+}
+
+interface IntersectionObserverGridCardProps {
+  item: CarItem;
+  index: number;
+  onOpenDetail?: (vehicleId: string) => void;
+  onSelectCarForInquiry?: (carName: string) => void;
+  key?: React.Key;
+}
+
+// Custom component using native IntersectionObserver for smooth scroll animations
+function IntersectionObserverGridCard({
+  item,
+  index,
+  onOpenDetail,
+  onSelectCarForInquiry,
+}: IntersectionObserverGridCardProps) {
+  const { t } = useLanguage();
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
+
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element) return;
+
+    // Set up native Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            // Once element is observed and animated, unobserve to optimize performance
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null, // viewport
+        threshold: 0.15, // 15% visible before triggering
+        rootMargin: '0px 0px -40px 0px', // trigger slightly before hitting the exact fold
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      if (element) observer.unobserve(element);
+    };
+  }, []);
+
+  // Stagger calculation based on column index
+  const staggerDelay = (index % 3) * 0.12;
+
+  return (
+    <div
+      ref={(node) => {
+        cardRef.current = node;
+        tiltRef.current = node;
+      }}
+      {...tiltProps}
+      className="relative rounded-2xl"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={
+          isVisible
+            ? { opacity: 1, y: 0 }
+            : { opacity: 0, y: 50 }
+        }
+        transition={{
+          duration: 0.7,
+          delay: staggerDelay,
+          ease: [0.215, 0.61, 0.355, 1], // Custom smooth ease-out curve
+        }}
+        className="group bg-surface-container-high border border-surface-variant/40 hover:border-secondary/60 rounded-2xl overflow-hidden flex flex-col justify-between transition-colors duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.4)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.65)] relative"
+      >
+        {/* Amber Glare Overlay */}
+        <div className="absolute inset-0 z-30 rounded-2xl pointer-events-none" {...glareProps} />
+      {/* Top Image Banner with Watermark */}
+      <div 
+        className="relative h-64 w-full overflow-hidden bg-background cursor-pointer"
+        onClick={() => {
+          playMechanicalClick('click');
+          if (onOpenDetail) onOpenDetail(item.id);
+          else if (onSelectCarForInquiry) onSelectCarForInquiry(item.title);
+        }}
+      >
+        <img
+          src={item.image}
+          alt={item.title}
+          loading="lazy"
+          decoding="async"
+          width="512"
+          height="288"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-container-high via-surface-container-high/20 to-transparent pointer-events-none" />
+
+        {/* Share ID Badge */}
+        <div className="absolute top-3 left-3 bg-background/80 backdrop-blur-md border border-secondary/40 px-2.5 py-1 rounded-full text-secondary font-label-caps text-[11px] tracking-wider shadow-md z-20">
+          #{item.shareId}
+        </div>
+
+        {/* Year Pill */}
+        {item.year && (
+          <div className="absolute top-3 right-3 bg-surface-container-lowest/80 backdrop-blur-md border border-surface-variant/40 px-2.5 py-1 rounded-full text-parchment font-label-caps text-[11px] tracking-wider shadow-md z-20">
+            {item.year}
+          </div>
+        )}
+
+        {/* Quick View Overlay Icon */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-background/40 backdrop-blur-[2px] z-20">
+          <span className="bg-secondary text-deep-charcoal font-label-caps text-xs px-4 py-2 rounded-full font-bold flex items-center space-x-1.5 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+            <span className="material-symbols-outlined text-[16px]">visibility</span>
+            <span>Ver Ficha Técnica</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Card Body */}
+      <div className="p-6 flex-1 flex flex-col justify-between bg-surface-container-high">
+        <div>
+          <span className="font-label-caps text-xs text-secondary tracking-widest block mb-1">
+            {item.subtitle}
+          </span>
+          <h3 
+            onClick={() => {
+              playMechanicalClick('click');
+              if (onOpenDetail) onOpenDetail(item.id);
+            }}
+            className="font-headline-md text-2xl text-parchment group-hover:text-amber-glow transition-colors cursor-pointer mb-3"
+          >
+            {item.title}
+          </h3>
+
+          {/* Quick Technical Tags */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {item.engine && (
+              <span className="bg-surface-container-low border border-surface-variant/30 text-on-surface-variant font-label-caps text-[11px] px-2.5 py-1 rounded-md flex items-center space-x-1">
+                <span className="material-symbols-outlined text-[13px] text-secondary">tune</span>
+                <span>{item.engine}</span>
+              </span>
+            )}
+            {item.transmission && (
+              <span className="bg-surface-container-low border border-surface-variant/30 text-on-surface-variant font-label-caps text-[11px] px-2.5 py-1 rounded-md flex items-center space-x-1">
+                <span className="material-symbols-outlined text-[13px] text-secondary">settings</span>
+                <span>{item.transmission}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="pt-4 border-t border-surface-variant/30 flex items-center justify-between gap-3">
+          <button
+            onClick={() => {
+              playMechanicalClick('click');
+              if (onOpenDetail) onOpenDetail(item.id);
+            }}
+            className="text-xs font-label-caps text-on-surface-variant hover:text-parchment transition-colors flex items-center space-x-1 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">info</span>
+            <span>{t.collection.viewDetails}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playMechanicalClick('click');
+              if (onSelectCarForInquiry) onSelectCarForInquiry(item.title);
+            }}
+            className="bg-secondary/10 hover:bg-secondary text-secondary hover:text-deep-charcoal border border-secondary/40 hover:border-secondary font-label-caps text-xs px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center space-x-1.5 font-bold"
+          >
+            <span>{t.nav.inquire}</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </motion.div>
+    </div>
+  );
+}
+
+export default function Collection({ onSelectCarForInquiry, onOpenDetail }: CollectionProps) {
+  const { t } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTagKey, setSelectedTagKey] = useState<keyof Translations['collection']['filters']>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const filterTagKeys: (keyof Translations['collection']['filters'])[] = [
+    'all',
+    'porsche',
+    'corujinha',
+    'fusca',
+    'willys',
+    'aircooled',
+  ];
+
+  const [customVehicles, setCustomVehicles] = useState<CarItem[]>(() =>
+    CustomVehicleService.getCustomVehicles().map((v) => ({
+      id: v.id,
+      shareId: v.shareId,
+      title: v.title,
+      subtitle: v.subtitle,
+      year: v.year,
+      engine: v.engine,
+      transmission: v.transmission,
+      image: v.image,
+      description: v.description,
+    }))
+  );
+
+  const refreshCustomVehicles = () => {
+    const fresh = CustomVehicleService.getCustomVehicles().map((v) => ({
+      id: v.id,
+      shareId: v.shareId,
+      title: v.title,
+      subtitle: v.subtitle,
+      year: v.year,
+      engine: v.engine,
+      transmission: v.transmission,
+      image: v.image,
+      description: v.description,
+    }));
+    setCustomVehicles(fresh);
+  };
+
+  useEffect(() => {
+    refreshCustomVehicles();
+    // Async sync with Supabase cloud database
+    CustomVehicleService.syncWithSupabase().then(() => {
+      refreshCustomVehicles();
+    });
+
+    const handleUpdate = () => refreshCustomVehicles();
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('studio_custom_vehicle_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('studio_custom_vehicle_updated', handleUpdate);
+    };
+  }, []);
+
+  const allItems = [...customVehicles, ...COLLECTION_ITEMS];
+
+  const filteredItems = allItems.filter((item) => {
+    const query = searchQuery.toLowerCase().trim();
+    const currentFilterLabel = t.collection.filters[selectedTagKey].toLowerCase();
+    
+    const matchesTag = 
+      selectedTagKey === 'all' || 
+      item.title.toLowerCase().includes(currentFilterLabel) || 
+      item.subtitle.toLowerCase().includes(currentFilterLabel) ||
+      (selectedTagKey === 'aircooled' && (item.title.toLowerCase().includes('air cooled') || item.subtitle.toLowerCase().includes('air cooled') || item.engine?.toLowerCase().includes('air cooled'))) ||
+      (selectedTagKey === 'corujinha' && item.title.toLowerCase().includes('kombi')) ||
+      (selectedTagKey === 'fusca' && item.title.toLowerCase().includes('fusca')) ||
+      (selectedTagKey === 'willys' && item.title.toLowerCase().includes('willys'));
+
+    const matchesQuery =
+      query === '' ||
+      item.title.toLowerCase().includes(query) ||
+      item.subtitle.toLowerCase().includes(query) ||
+      item.shareId.toLowerCase().includes(query) ||
+      item.id.toLowerCase().includes(query);
+
+    return matchesTag && matchesQuery;
+  });
+
+  // Reset carousel index when search/filter changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [searchQuery, selectedTagKey]);
+
+  const prevSlide = () => {
+    if (filteredItems.length === 0) return;
+    playMechanicalClick('click');
+    setCurrentIndex((prev) => (prev === 0 ? filteredItems.length - 1 : prev - 1));
+  };
+
+  const nextSlide = () => {
+    if (filteredItems.length === 0) return;
+    playMechanicalClick('click');
+    setCurrentIndex((prev) => (prev === filteredItems.length - 1 ? 0 : prev + 1));
+  };
+
+  useEffect(() => {
+    if (viewMode !== 'carousel') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        prevSlide();
+      } else if (e.key === 'ArrowRight') {
+        nextSlide();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [filteredItems.length, viewMode]);
+
+  const getCardPosition = (index: number) => {
+    const total = filteredItems.length;
+    if (total === 0) return 0;
+    let diff = index - currentIndex;
+
+    if (diff > total / 2) diff -= total;
+    if (diff < -total / 2) diff += total;
+
+    return diff;
+  };
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
+      className="py-section-gap bg-background overflow-hidden relative"
+      id="collection"
+    >
+      <div className="text-center mb-10 relative z-10 px-4 max-w-4xl mx-auto">
+        <span className="font-label-caps text-label-caps text-secondary tracking-widest block mb-3">
+          {t.collection.tagline}
+        </span>
+        <h2 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-parchment mb-6">
+          {t.collection.title}
+        </h2>
+
+        {/* Search Bar & Layout Toggle */}
+        <div className="max-w-xl mx-auto space-y-4">
+          <div className="relative flex items-center">
+            <span className="material-symbols-outlined absolute left-4 text-on-surface-variant text-[22px] pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t.collection.searchPlaceholder}
+              className="w-full pl-12 pr-10 py-3 bg-surface-container-low/90 border border-surface-variant/40 rounded-xl text-parchment font-body-md text-sm focus:outline-none focus:border-secondary transition-all shadow-inner placeholder:text-on-surface-variant/60"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 p-1 text-on-surface-variant hover:text-parchment transition-colors rounded-full cursor-pointer"
+                aria-label="Limpar pesquisa"
+                title="Limpar pesquisa"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            )}
+          </div>
+
+          {/* Quick Filter Chips & View Mode Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {filterTagKeys.map((key) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    playMechanicalClick('click');
+                    setSelectedTagKey(key);
+                  }}
+                  className={`font-label-caps text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer border ${
+                    selectedTagKey === key
+                      ? 'bg-secondary text-deep-charcoal border-secondary font-bold shadow-md'
+                      : 'bg-surface-container-low text-on-surface-variant border-surface-variant/40 hover:border-secondary/60 hover:text-parchment'
+                  }`}
+                >
+                  {t.collection.filters[key]}
+                </button>
+              ))}
+            </div>
+
+            {/* Grid vs Carousel View Toggle */}
+            <div className="flex items-center bg-surface-container-low border border-surface-variant/40 rounded-lg p-1 space-x-1 shrink-0 ml-auto sm:ml-0">
+              <button
+                onClick={() => {
+                  playMechanicalClick('click');
+                  setViewMode('grid');
+                }}
+                className={`p-1.5 rounded-md transition-colors flex items-center space-x-1 font-label-caps text-xs cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-secondary text-deep-charcoal font-bold shadow'
+                    : 'text-on-surface-variant hover:text-parchment'
+                }`}
+                title="Exibir em Grade com Animação Intersection Observer"
+              >
+                <span className="material-symbols-outlined text-[18px]">grid_view</span>
+                <span className="hidden sm:inline">Grade</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  playMechanicalClick('click');
+                  setViewMode('carousel');
+                }}
+                className={`p-1.5 rounded-md transition-colors flex items-center space-x-1 font-label-caps text-xs cursor-pointer ${
+                  viewMode === 'carousel'
+                    ? 'bg-secondary text-deep-charcoal font-bold shadow'
+                    : 'text-on-surface-variant hover:text-parchment'
+                }`}
+                title="Exibir em Carrossel 3D"
+              >
+                <span className="material-symbols-outlined text-[18px]">view_carousel</span>
+                <span className="hidden sm:inline">Carrossel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {filteredItems.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="text-center py-16 px-4 max-w-md mx-auto"
+        >
+          <div className="w-16 h-16 rounded-full bg-surface-container-low border border-surface-variant/40 flex items-center justify-center mx-auto mb-4 text-on-surface-variant">
+            <span className="material-symbols-outlined text-[32px]">search_off</span>
+          </div>
+          <h3 className="font-headline-md text-xl text-parchment mb-2">{t.collection.noResultsTitle}</h3>
+          <p className="font-body-md text-sm text-on-surface-variant mb-6">
+            {t.collection.noResultsText}
+          </p>
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedTagKey('all');
+            }}
+            className="bg-secondary text-deep-charcoal font-label-caps text-xs px-5 py-2.5 rounded-lg hover:bg-amber-glow transition-colors cursor-pointer"
+          >
+            Limpar Filtros e Ver Todos
+          </button>
+        </motion.div>
+      ) : viewMode === 'grid' ? (
+        /* GRID VIEW WITH NATIVE INTERSECTION OBSERVER ANIMATIONS */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredItems.map((item, index) => (
+              <IntersectionObserverGridCard
+                key={item.id}
+                item={item}
+                index={index}
+                onOpenDetail={onOpenDetail}
+                onSelectCarForInquiry={onSelectCarForInquiry}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* 3D CAROUSEL VIEW */
+        <div 
+          className="carousel-container relative w-full h-[520px] md:h-[600px] flex items-center justify-center max-w-[1440px] mx-auto px-4"
+          style={{ perspective: 1200 }}
+        >
+          <AnimatePresence mode="sync">
+            {filteredItems.map((item, index) => {
+              const pos = getCardPosition(index);
+              const isCenter = pos === 0;
+              const isLeft = pos === -1 || (currentIndex === 0 && index === filteredItems.length - 1 && filteredItems.length > 2);
+              const isRight = pos === 1 || (currentIndex === filteredItems.length - 1 && index === 0 && filteredItems.length > 2);
+
+              const shouldRender = filteredItems.length === 1 ? isCenter : (isCenter || isLeft || isRight);
+              if (!shouldRender) return null;
+
+              let targetVariant = 'hiddenRight';
+              let zIndex = 10;
+
+              if (isCenter) {
+                targetVariant = 'center';
+                zIndex = 30;
+              } else if (isLeft) {
+                targetVariant = 'left';
+                zIndex = 20;
+              } else if (isRight) {
+                targetVariant = 'right';
+                zIndex = 20;
+              } else if (pos < 0) {
+                targetVariant = 'hiddenLeft';
+              }
+
+              return (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={targetVariant}
+                  animate={targetVariant}
+                  variants={{
+                    center: {
+                      x: 0,
+                      scale: 1,
+                      rotateY: 0,
+                      opacity: 1,
+                      filter: 'blur(0px)',
+                    },
+                    left: {
+                      x: '-68%',
+                      scale: 0.86,
+                      rotateY: 22,
+                      opacity: 0.65,
+                      filter: 'blur(0.5px)',
+                    },
+                    right: {
+                      x: '68%',
+                      scale: 0.86,
+                      rotateY: -22,
+                      opacity: 0.65,
+                      filter: 'blur(0.5px)',
+                    },
+                    hiddenLeft: {
+                      x: '-130%',
+                      scale: 0.7,
+                      rotateY: 40,
+                      opacity: 0,
+                      filter: 'blur(3px)',
+                    },
+                    hiddenRight: {
+                      x: '130%',
+                      scale: 0.7,
+                      rotateY: -40,
+                      opacity: 0,
+                      filter: 'blur(3px)',
+                    },
+                  }}
+                  transition={{
+                    duration: 0.65,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  drag={isCenter ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(_, info) => {
+                    if (info.offset.x < -60) {
+                      nextSlide();
+                    } else if (info.offset.x > 60) {
+                      prevSlide();
+                    }
+                  }}
+                  onClick={() => {
+                    if (isLeft) prevSlide();
+                    else if (isRight) nextSlide();
+                    else if (isCenter) {
+                      if (onOpenDetail) onOpenDetail(item.id);
+                      else if (onSelectCarForInquiry) onSelectCarForInquiry(item.title);
+                    }
+                  }}
+                  style={{ zIndex, transformStyle: 'preserve-3d' }}
+                  className="carousel-item absolute w-[280px] sm:w-[320px] md:w-[400px] h-[450px] md:h-[500px] rounded-2xl overflow-hidden border border-surface-variant/40 bg-surface-container-high flex flex-col group cursor-pointer shadow-[0_25px_60px_rgba(0,0,0,0.6)]"
+                >
+                  <div className="h-2/3 w-full relative overflow-hidden">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
+                      width="512"
+                      height="288"
+                      className="w-full h-full object-cover transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-container-high via-transparent to-transparent pointer-events-none" />
+                    
+                    <div className="absolute top-3 left-3 bg-background/80 backdrop-blur-md border border-secondary/40 px-2.5 py-1 rounded-full text-secondary font-label-caps text-[10px] tracking-wider shadow-md z-20">
+                      #{item.shareId}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 p-6 flex flex-col justify-between bg-surface-container-high">
+                    <div>
+                      <h3 className="font-headline-md text-[24px] md:text-headline-md text-parchment mb-1 group-hover:text-amber-glow transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="font-label-caps text-label-caps text-secondary tracking-wider">
+                        {item.subtitle}
+                      </p>
+                    </div>
+
+                    {isCenter && (
+                      <div className="flex justify-between items-center pt-2 relative">
+                        <span className="text-xs text-on-surface-variant font-label-caps group-hover:text-parchment transition-colors">
+                          Ver Ficha Técnica & História
+                        </span>
+                        <div className="relative group/btn">
+                          <span className="material-symbols-outlined text-secondary text-[20px] group-hover:translate-x-1 transition-transform">
+                            info
+                          </span>
+                          <span className="absolute bottom-full mb-2 right-0 px-2.5 py-1 bg-surface-container-lowest border border-surface-variant text-[10px] font-label-caps text-parchment rounded shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                            Abrir Detalhes
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+
+          {/* Navigation Buttons with Tooltips */}
+          {filteredItems.length > 1 && (
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 md:px-margin-desktop z-40 pointer-events-none">
+              <div className="relative group/prev pointer-events-auto">
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={prevSlide}
+                  aria-label="Veículo anterior"
+                  className="w-12 h-12 rounded-full bg-surface-container-high/95 border-2 border-secondary/50 hover:border-secondary ring-1 ring-secondary/20 hover:ring-secondary/50 flex items-center justify-center text-parchment hover:text-secondary transition-all shadow-2xl hover:shadow-[0_0_20px_rgba(176,131,50,0.35)] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined font-bold text-[24px]">chevron_left</span>
+                </motion.button>
+                <span className="absolute bottom-full mb-2 left-0 px-2.5 py-1 bg-surface-container-lowest border border-surface-variant/80 text-[11px] font-label-caps text-parchment rounded shadow-lg opacity-0 group-hover/prev:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Anterior (Seta Esquerda)
+                </span>
+              </div>
+
+              <div className="relative group/next pointer-events-auto">
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={nextSlide}
+                  aria-label="Próximo veículo"
+                  className="w-12 h-12 rounded-full bg-surface-container-high/95 border-2 border-secondary/50 hover:border-secondary ring-1 ring-secondary/20 hover:ring-secondary/50 flex items-center justify-center text-parchment hover:text-secondary transition-all shadow-2xl hover:shadow-[0_0_20px_rgba(176,131,50,0.35)] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined font-bold text-[24px]">chevron_right</span>
+                </motion.button>
+                <span className="absolute bottom-full mb-2 right-0 px-2.5 py-1 bg-surface-container-lowest border border-surface-variant/80 text-[11px] font-label-caps text-parchment rounded shadow-lg opacity-0 group-hover/next:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Próximo (Seta Direita)
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pagination Indicators for Carousel mode */}
+      {viewMode === 'carousel' && filteredItems.length > 1 && (
+        <div className="flex justify-center mt-8 space-x-2">
+          {filteredItems.map((item, idx) => (
+            <div key={item.id} className="relative group/dot">
+              <motion.button
+                whileHover={{ scale: 1.25 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => setCurrentIndex(idx)}
+                aria-label={`Ir para ${item.title}`}
+                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === currentIndex
+                    ? 'w-8 bg-secondary'
+                    : 'w-2 bg-surface-variant hover:bg-on-surface-variant'
+                }`}
+              />
+              <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-surface-container-lowest border border-surface-variant text-[10px] font-label-caps text-parchment rounded shadow-md opacity-0 group-hover/dot:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                {item.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
