@@ -1,4 +1,5 @@
 import { FALLBACK_INSTAGRAM_POSTS, InstagramPost } from '../data/instagramPosts';
+import { buildWhatsAppLink } from '../config/contact';
 
 const CACHE_KEY = 'studio_senhorele_instagram_posts_v3';
 const CACHE_TTL = 1000 * 60 * 15; // 15 minutes cache
@@ -30,6 +31,6 @@ export class InstagramService {
       `Gostaria de consultar mais detalhes sobre este veículo/curadoria.`,
     ].join('\n');
 
-    return `https://wa.me/5511947251630?text=${encodeURIComponent(text)}`;
+    return buildWhatsAppLink(text);
   }
 }

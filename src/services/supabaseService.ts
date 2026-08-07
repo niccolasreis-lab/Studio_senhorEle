@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { CustomVehicle } from './customVehicleService';
 
-export const SUPABASE_URL = 'https://npfqnsgjicmxwmurwosu.supabase.co';
-export const SUPABASE_PROJECT_REF = 'npfqnsgjicmxwmurwosu';
+export const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
+export const SUPABASE_PROJECT_REF = 'rucqvvollyrlgyekoelq';
 
 const STORAGE_KEY_ANON = 'studio_supabase_anon_key';
 
@@ -21,6 +21,32 @@ export const getSupabaseClient = () => {
 };
 
 export const SupabaseService = {
+  /** Faz upload de uma imagem para o bucket público de veículos. */
+  async uploadImage(file: File, path?: string): Promise<string | null> {
+    try {
+      const client = getSupabaseClient();
+      if (!client) return null;
+
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fileName = path || `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 60)}`;
+      const { error } = await client.storage.from('vehicle-images').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || `image/${ext}`,
+      });
+
+      if (error) {
+        console.warn('Supabase upload error:', error.message);
+        return null;
+      }
+
+      return `${SUPABASE_URL}/storage/v1/object/public/vehicle-images/${encodeURIComponent(fileName)}`;
+    } catch (err) {
+      console.warn('Supabase upload warning:', err);
+      return null;
+    }
+  },
+
   async fetchVehicles(): Promise<CustomVehicle[]> {
     try {
       const client = getSupabaseClient();
@@ -42,6 +68,8 @@ export const SupabaseService = {
         title: item.title,
         subtitle: item.subtitle,
         image: item.image,
+        image2: item.image2,
+        image3: item.image3,
         year: String(item.year),
         engine: item.engine,
         transmission: item.transmission,
@@ -69,6 +97,8 @@ export const SupabaseService = {
           title: vehicle.title,
           subtitle: vehicle.subtitle,
           image: vehicle.image,
+          image2: vehicle.image2 || '',
+          image3: vehicle.image3 || '',
           year: vehicle.year,
           engine: vehicle.engine,
           transmission: vehicle.transmission,

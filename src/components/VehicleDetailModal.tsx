@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { useLanguage } from '../i18n/LanguageContext';
+import { buildWhatsAppLink } from '../config/contact';
+import ImageLightboxModal, { GalleryItem } from './ImageLightboxModal';
 
 export interface VehicleDetail {
   id: string;
@@ -10,16 +12,21 @@ export interface VehicleDetail {
   title: string;
   subtitle: string;
   image: string;
+  gallery?: GalleryItem[];
   year: string;
-  engine: string;
-  transmission: string;
-  color: string;
-  power: string;
-  restorationWorkshop: string;
-  restorationYear: string;
-  condition: string;
-  description: string;
-  restorationHistory: string[];
+  engine?: string;
+  transmission?: string;
+  color?: string;
+  power?: string;
+  restorationWorkshop?: string;
+  restorationYear?: string;
+  condition?: string;
+  description?: string;
+  restorationHistory?: string[];
+  history?: string[];
+  curiosities?: string[];
+  presentationText?: string;
+  variationsNote?: string;
   specs: { label: string; value: string }[];
 }
 
@@ -30,6 +37,28 @@ export const VEHICLE_DETAILS: Record<string, VehicleDetail> = {
     title: 'Porsche 911 Classic',
     subtitle: 'Matching Numbers • 1973',
     image: '/assets/images/porsche-911-classic-1973.jpg',
+    gallery: [
+      {
+        src: '/assets/images/porsche-911-classic-1973.jpg',
+        angleLabel: 'Ângulo Principal • Exterior F-Series',
+        caption: 'Irish Green histórico com rodas Fuchs 15" originais de fábrica.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Engenharia • Motor Boxer Flat-6',
+        caption: 'Bloco 2.4L refrigerado a ar com dupla carburação Zenith e matching numbers.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Cockpit Vintage • Tapeçaria e Relógios VDO',
+        caption: 'Acabamento interno em couro bovino bege canela com volante de época.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Perfil Traseiro • Emblemas & Grade de Época',
+        caption: 'Detalhes originais de grade cromada e certificação de coleção.',
+      },
+    ],
     year: '1973',
     engine: '2.4L Flat-6 Boxer Air Cooled',
     transmission: 'Manual 5 Marchas Type 915',
@@ -59,6 +88,23 @@ export const VEHICLE_DETAILS: Record<string, VehicleDetail> = {
     title: 'VW Kombi Corujinha',
     subtitle: 'Restored Heritage • 1970',
     image: '/assets/images/vw-kombi-corujinha-1970.jpg',
+    gallery: [
+      {
+        src: '/assets/images/vw-kombi-corujinha-1970.jpg',
+        angleLabel: 'Vista Frontal • T1 Corujinha 6 Portas',
+        caption: 'Pintura bi-tom Azul Lótus & Branco Lótus com frisos originais em alumínio.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1527247043589-98e6ac08f56c?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Interior Vintage • Salão de Passageiros',
+        caption: 'Tapeçaria artesanal estilo curvim de época acolchoado para 9 ocupantes.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Detalhes de Época • Vidros & Logotipia VW',
+        caption: 'Emblemas de alumínio polido e borrachas novas de vedação de fábrica.',
+      },
+    ],
     year: '1970',
     engine: '1500cc Air-Cooled 4 cilindros Boxer',
     transmission: 'Manual de 4 marchas com redução original',
@@ -88,6 +134,23 @@ export const VEHICLE_DETAILS: Record<string, VehicleDetail> = {
     title: 'VW Fusca Cal Style',
     subtitle: 'Air Cooled Custom • 1968',
     image: '/assets/images/vw-fusca-cal-style-1968.jpg',
+    gallery: [
+      {
+        src: '/assets/images/vw-fusca-cal-style-1968.jpg',
+        angleLabel: 'Vista Frontal • Cal Look California Style',
+        caption: 'Pintura Vermelho Granada com suspensão encurtada e catraca dupla.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Postura & Rodas • BRM Diamantadas',
+        caption: 'Rodas BRM aro 15 com acabamento diamantado e perfil baixo dianteiro.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Motor 1600cc Dual Solex 32',
+        caption: 'Dupla carburação regulada com escapamento inox 4-em-1 e abafador cerâmico.',
+      },
+    ],
     year: '1968',
     engine: '1600cc Air-Cooled com comando W110 e carburação dupla Solex 32',
     transmission: 'Manual 4 marchas rápida com alavanca EMPI',
@@ -117,6 +180,23 @@ export const VEHICLE_DETAILS: Record<string, VehicleDetail> = {
     title: 'Aero Willys',
     subtitle: 'Original Impecável • 1967',
     image: '/assets/images/aero-willys-1967.jpg',
+    gallery: [
+      {
+        src: '/assets/images/aero-willys-1967.jpg',
+        angleLabel: 'Vista Frontal • Sedan Executivo Willys',
+        caption: 'O primeiro clássico do acervo. Conservação impecável e Placa Preta.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Frisos e Cromagem • Grade de Época',
+        caption: 'Calotas originais estampadas e para-choques cromados com brilho espelhado.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Interior Executivo • Veludo & Painel de Madeira',
+        caption: 'Troca de marcha na coluna de direção e tapeçaria original em veludo de fábrica.',
+      },
+    ],
     year: '1967',
     engine: 'Motor 2600 6 Cilindros em Linha "Itamaraty"',
     transmission: 'Manual de 4 marchas na coluna de direção',
@@ -146,6 +226,18 @@ export const VEHICLE_DETAILS: Record<string, VehicleDetail> = {
     title: 'Preparação Air Cooled',
     subtitle: 'Box 767 Restauração • Custom',
     image: '/assets/images/aircooled-box-767.jpg',
+    gallery: [
+      {
+        src: '/assets/images/aircooled-box-767.jpg',
+        angleLabel: 'Engenharia • Usinagem & Acabamento Box 767',
+        caption: 'Montagem artesanal de bloco de magnésio/alumínio com dupla carburação Weber.',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=1600&q=80',
+        angleLabel: 'Bancada de Testes • Dinamômetro & Pressão de Óleo',
+        caption: 'Aferição estática de temperatura, pressão e estanqueidade dos componentes.',
+      },
+    ],
     year: 'Custom & High Performance',
     engine: 'Motores Boxer 1600cc a 2100cc Air Cooled sob medida',
     transmission: 'Câmbio trabalhado com relações longas / Blocante',
@@ -176,16 +268,18 @@ import { CustomVehicleService } from '../services/customVehicleService';
 interface VehicleDetailModalProps {
   vehicleId: string | null;
   onClose: () => void;
-  onInquire: (carTitle: string) => void;
+  onInquire?: (carTitle: string) => void;
 }
 
 export default function VehicleDetailModal({
   vehicleId,
   onClose,
-  onInquire,
 }: VehicleDetailModalProps) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [questionError, setQuestionError] = useState(false);
   const modalRef = useAccessibleModal<HTMLDivElement>(Boolean(vehicleId), onClose);
 
   let vehicle: VehicleDetail | null = vehicleId ? VEHICLE_DETAILS[vehicleId] : null;
@@ -202,22 +296,28 @@ export default function VehicleDetailModal({
         year: customMatch.year,
         engine: customMatch.engine,
         transmission: customMatch.transmission,
-        color: customMatch.color || 'Acabamento de Época',
-        power: customMatch.power || 'Especificação de Fábrica',
-        restorationWorkshop: 'Studio Senhorele / Curadoria Especial',
-        restorationYear: customMatch.year,
-        condition: customMatch.condition || 'Excelente Estado de Conservação',
-        description: customMatch.description || 'Exemplar exclusivo da coleção Studio SenhorEle.',
-        restorationHistory: [
-          'Avaliação detalhada de histórico e proveniência.',
-          'Revisão completa dos sistemas mecânicos e elétricos.',
-          'Higienização detalhada e polimento técnico artesanal.'
+        color: customMatch.color,
+        power: customMatch.power,
+        condition: customMatch.condition,
+        description: customMatch.description || customMatch.presentationText,
+        presentationText: customMatch.presentationText,
+        variationsNote: customMatch.variationsNote,
+        history: customMatch.history,
+        curiosities: customMatch.curiosities,
+        restorationHistory: customMatch.history,
+        gallery: [
+          { src: customMatch.image, angleLabel: 'Imagem 1', caption: customMatch.subtitle },
+          ...(customMatch.image2 ? [{ src: customMatch.image2, angleLabel: 'Imagem 2', caption: customMatch.subtitle }] : []),
+          ...(customMatch.image3 ? [{ src: customMatch.image3, angleLabel: 'Imagem 3', caption: customMatch.subtitle }] : []),
         ],
-        specs: [
-          { label: 'Chassi / ID', value: customMatch.shareId },
-          { label: 'Motor', value: customMatch.engine },
-          { label: 'Transmissão', value: customMatch.transmission }
-        ]
+        specs:
+          customMatch.specs && customMatch.specs.length > 0
+            ? customMatch.specs
+            : [
+                { label: 'Chassi / ID', value: customMatch.shareId },
+                { label: 'Motor', value: customMatch.engine },
+                { label: 'Transmissão', value: customMatch.transmission },
+              ],
       };
     }
   }
@@ -252,6 +352,33 @@ export default function VehicleDetailModal({
     const shareUrl = `${window.location.origin}${window.location.pathname}?v=${vehicle.shareId}`;
     const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSendQuestion = () => {
+    const trimmedQuestion = question.trim();
+    if (!trimmedQuestion) {
+      setQuestionError(true);
+      return;
+    }
+    setQuestionError(false);
+    playMechanicalClick('click');
+
+    const lines = [
+      'Olá! Estou visitando o site da Coleção SrL e tenho uma dúvida sobre este veículo:',
+      '',
+      `🚗 ${vehicle.title}`,
+    ];
+    if (vehicle.year) lines.push(`📅 ${vehicle.year}`);
+    lines.push(
+      '',
+      'Minha dúvida:',
+      trimmedQuestion,
+      '',
+      '🔗 Página do veículo:',
+      window.location.href,
+    );
+
+    window.open(buildWhatsAppLink(lines.join('\n')), '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -310,6 +437,20 @@ export default function VehicleDetailModal({
                   <span className="material-symbols-outlined text-[14px]">tag</span>
                   <span>#{vehicle.shareId}</span>
                 </span>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    playMechanicalClick('slide');
+                    setIsLightboxOpen(true);
+                  }}
+                  className="bg-background/80 backdrop-blur-md border border-amber-glow/60 hover:border-amber-glow text-amber-glow font-label-caps text-xs px-3 py-1.5 rounded-full shadow-md flex items-center space-x-1.5 cursor-pointer hover:bg-amber-glow/20 transition-all"
+                  title="Abrir Galeria de Arte Fullscreen"
+                >
+                  <span className="material-symbols-outlined text-[15px]">fullscreen</span>
+                  <span>{t.galleryModal.viewGallery}</span>
+                </motion.button>
               </div>
 
               {/* Title & Subtitle overlay */}
@@ -332,11 +473,18 @@ export default function VehicleDetailModal({
             {/* Scrollable Content Body */}
             <div className="p-6 sm:p-8 space-y-8 overflow-y-auto custom-scrollbar">
               {/* Overview Description */}
-              <div className="space-y-3">
-                <p className="font-body-lg text-lg text-parchment/90 leading-relaxed font-serif italic border-l-2 border-secondary pl-4 py-1">
-                  "{vehicle.description}"
-                </p>
-              </div>
+              {vehicle.description && (
+                <div className="space-y-3">
+                  <p className="font-body-lg text-lg text-parchment/90 leading-relaxed font-serif italic border-l-2 border-secondary pl-4 py-1">
+                    "{vehicle.description}"
+                  </p>
+                  {vehicle.variationsNote && (
+                    <p className="font-label-caps text-xs text-on-surface-variant leading-relaxed">
+                      {vehicle.variationsNote}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Technical Specifications Grid */}
               <div className="space-y-4">
@@ -346,87 +494,163 @@ export default function VehicleDetailModal({
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      {t.vehicleDetail.engine}
-                    </span>
-                    <span className="font-body-md text-parchment font-medium">{vehicle.engine}</span>
-                  </div>
-
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      {t.vehicleDetail.transmission}
-                    </span>
-                    <span className="font-body-md text-parchment font-medium">{vehicle.transmission}</span>
-                  </div>
-
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      {t.vehicleDetail.color}
-                    </span>
-                    <span className="font-body-md text-parchment font-medium">{vehicle.color}</span>
-                  </div>
-
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      Potência Estimada
-                    </span>
-                    <span className="font-body-md text-parchment font-medium">{vehicle.power}</span>
-                  </div>
-
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      {t.vehicleDetail.status}
-                    </span>
-                    <span className="font-body-md text-secondary font-medium">{vehicle.condition}</span>
-                  </div>
-
-                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
-                    <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
-                      {t.vehicleDetail.year}
-                    </span>
-                    <span className="font-body-md text-parchment font-medium">{vehicle.year} ({vehicle.restorationYear})</span>
-                  </div>
-                </div>
-
-                {/* Additional Spec Badges */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {vehicle.specs.map((spec, i) => (
-                    <div key={i} className="bg-surface-container-lowest/60 rounded-lg p-3 border border-surface-variant/20">
-                      <div className="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">
-                        {spec.label}
-                      </div>
-                      <div className="text-xs font-semibold text-secondary mt-0.5 truncate">
-                        {spec.value}
-                      </div>
+                  {vehicle.engine && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        {t.vehicleDetail.engine}
+                      </span>
+                      <span className="font-body-md text-parchment font-medium">{vehicle.engine}</span>
                     </div>
-                  ))}
+                  )}
+
+                  {vehicle.transmission && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        {t.vehicleDetail.transmission}
+                      </span>
+                      <span className="font-body-md text-parchment font-medium">{vehicle.transmission}</span>
+                    </div>
+                  )}
+
+                  {vehicle.color && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        {t.vehicleDetail.color}
+                      </span>
+                      <span className="font-body-md text-parchment font-medium">{vehicle.color}</span>
+                    </div>
+                  )}
+
+                  {vehicle.power && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        Potência Estimada
+                      </span>
+                      <span className="font-body-md text-parchment font-medium">{vehicle.power}</span>
+                    </div>
+                  )}
+
+                  {vehicle.condition && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        {t.vehicleDetail.status}
+                      </span>
+                      <span className="font-body-md text-secondary font-medium">{vehicle.condition}</span>
+                    </div>
+                  )}
+
+                  {vehicle.year && (
+                    <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 flex flex-col">
+                      <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-1">
+                        {t.vehicleDetail.year}
+                      </span>
+                      <span className="font-body-md text-parchment font-medium">
+                        {vehicle.year}
+                        {vehicle.restorationYear && vehicle.restorationYear !== vehicle.year ? ` (${vehicle.restorationYear})` : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Additional Spec Badges (campos vazios são omitidos) */}
+                {vehicle.specs.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                    {vehicle.specs
+                      .filter((spec) => spec.value && spec.value.trim() !== '')
+                      .map((spec, i) => (
+                        <div key={i} className="bg-surface-container-lowest/60 rounded-lg p-3 border border-surface-variant/20">
+                          <div className="text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">
+                            {spec.label}
+                          </div>
+                          <div className="text-xs font-semibold text-secondary mt-0.5 truncate">
+                            {spec.value}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
 
-              {/* Restoration History Timeline / Process */}
-              <div className="space-y-4">
+              {/* Histórico do Modelo / Proveniência (oculto se sem dados fidedignos) */}
+              {vehicle.restorationHistory && vehicle.restorationHistory.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-headline-md text-xl text-parchment flex items-center space-x-2 border-b border-surface-variant/30 pb-2">
+                    <span className="material-symbols-outlined text-secondary">history_edu</span>
+                    <span>{t.vehicleDetail.historyTitle}</span>
+                  </h3>
+
+                  <div className="space-y-3">
+                    {vehicle.restorationHistory.map((step, idx) => (
+                      <div key={idx} className="flex items-start space-x-3">
+                        <div className="w-6 h-6 rounded-full bg-secondary/20 border border-secondary/60 text-secondary text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                          {idx + 1}
+                        </div>
+                        <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                          {step}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Curiosidades (oculto quando vazio) */}
+              {vehicle.curiosities && vehicle.curiosities.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-headline-md text-xl text-parchment flex items-center space-x-2 border-b border-surface-variant/30 pb-2">
+                    <span className="material-symbols-outlined text-secondary">psychology_alt</span>
+                    <span>&nbsp;</span>
+                    <span className="font-headline-md text-base text-parchment">Curiosidades Históricas</span>
+                  </h3>
+                  <ul className="space-y-2">
+                    {vehicle.curiosities.map((curiosity, idx) => (
+                      <li key={idx} className="font-body-md text-sm text-on-surface-variant leading-relaxed list-disc list-inside">
+                        {curiosity}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Ask a Question via WhatsApp */}
+              <div className="space-y-4 max-w-xl">
                 <h3 className="font-headline-md text-xl text-parchment flex items-center space-x-2 border-b border-surface-variant/30 pb-2">
-                  <span className="material-symbols-outlined text-secondary">history_edu</span>
-                  <span>{t.vehicleDetail.historyTitle}</span>
+                  <span className="material-symbols-outlined text-secondary">help</span>
+                  <span>{t.vehicleDetail.doubtTitle}</span>
                 </h3>
 
-                <div className="space-y-3">
-                  {vehicle.restorationHistory.map((step, idx) => (
-                    <div key={idx} className="flex items-start space-x-3">
-                      <div className="w-6 h-6 rounded-full bg-secondary/20 border border-secondary/60 text-secondary text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">
-                        {idx + 1}
-                      </div>
-                      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                        {step}
-                      </p>
-                    </div>
-                  ))}
+                <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-4 sm:p-5">
+                  <textarea
+                    value={question}
+                    onChange={(e) => {
+                      setQuestion(e.target.value);
+                      if (e.target.value.trim()) setQuestionError(false);
+                    }}
+                    rows={3}
+                    placeholder={t.vehicleDetail.doubtPlaceholder}
+                    className="w-full bg-surface-container-lowest/70 border border-surface-variant/40 rounded-lg px-4 py-3 text-parchment font-body-md text-sm focus:outline-none focus:border-secondary transition-colors resize-none placeholder:text-on-surface-variant/60"
+                    aria-label={t.vehicleDetail.doubtTitle}
+                  />
+
+                  {questionError && (
+                    <p className="text-xs text-amber-glow font-label-caps mt-2">
+                      {t.vehicleDetail.doubtEmptyHint}
+                    </p>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={handleSendQuestion}
+                    className="w-full mt-3 bg-secondary text-deep-charcoal hover:bg-amber-glow font-label-caps text-sm px-5 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-md font-bold"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">chat</span>
+                    <span>{t.vehicleDetail.doubtSendButton}</span>
+                  </motion.button>
                 </div>
               </div>
             </div>
-
-            {/* Toast Notification for Share / Copy */}
             <AnimatePresence>
               {copied && (
                 <motion.div
@@ -442,56 +666,39 @@ export default function VehicleDetailModal({
             </AnimatePresence>
 
             {/* Footer Actions */}
-            <div className="p-4 sm:p-6 bg-surface-container-low border-t border-surface-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-              <div className="text-xs text-on-surface-variant flex items-center space-x-1">
-                <span className="material-symbols-outlined text-[16px] text-secondary">verified</span>
-                <span>{t.vehicleDetail.shareIdLabel}: <strong className="text-parchment">#{vehicle.shareId}</strong></span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={handleWhatsAppShare}
-                  className="px-3.5 py-2.5 rounded-lg border border-emerald-600/50 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors font-label-caps text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
-                  title="Compartilhar no WhatsApp"
-                >
-                  <span className="material-symbols-outlined text-[16px]">chat</span>
-                  <span>WhatsApp</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={handleShare}
-                  className="px-3.5 py-2.5 rounded-lg border border-surface-variant text-on-surface-variant hover:text-parchment hover:border-secondary transition-colors font-label-caps text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
-                  title="Copiar link e compartilhar"
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {copied ? 'check' : 'share'}
-                  </span>
-                  <span>{copied ? t.vehicleDetail.copied : t.vehicleDetail.copyLink}</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={() => {
-                    onClose();
-                    onInquire(vehicle.title);
-                  }}
-                  className="bg-secondary text-deep-charcoal font-label-caps text-xs px-5 py-2.5 rounded-lg hover:bg-amber-glow transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-md"
-                >
-                  <span>{t.vehicleDetail.inquireVehicle}</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </motion.button>
-              </div>
+            <div className="p-4 sm:p-6 bg-surface-container-low border-t border-surface-variant/30 flex items-center justify-center sm:justify-end shrink-0">
+              <motion.a
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                href={buildWhatsAppLink(`Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${vehicle.title} (#${vehicle.shareId})`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => playMechanicalClick('click')}
+                className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-label-caps text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md font-bold"
+              >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.157 4.228 4.228-1.157zm11.233-6.082c-.083-.139-.304-.222-.637-.388-.333-.167-1.968-.972-2.274-1.083-.306-.112-.529-.167-.751.167-.222.333-.861 1.083-1.056 1.306-.194.222-.389.25-.722.083-.333-.167-1.408-.519-2.682-1.655-1.002-.892-1.678-1.995-1.874-2.328-.195-.333-.021-.513.145-.678.15-.149.333-.389.5-.583.167-.194.222-.333.333-.556.111-.222.056-.417-.028-.583-.083-.167-.751-1.806-1.028-2.472-.27-.648-.545-.561-.75-.572-.198-.011-.426-.011-.654-.011-.228 0-.598.086-.911.428-.313.342-1.196 1.169-1.196 2.85 0 1.681 1.225 3.303 1.396 3.533.171.23 2.413 3.685 5.845 5.166.816.352 1.453.562 1.949.72.82.261 1.567.224 2.157.136.657-.098 2.018-.825 2.302-1.625.284-.801.284-1.487.199-1.626z"/>
+                </svg>
+                <span>Falar no WhatsApp sobre este Veículo</span>
+              </motion.a>
             </div>
           </motion.div>
         </div>
+      )}
+      
+      {vehicle && (
+        <ImageLightboxModal
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          title={vehicle.title}
+          subtitle={vehicle.subtitle}
+          images={
+            vehicle.gallery && vehicle.gallery.length > 0
+              ? vehicle.gallery
+              : [{ src: vehicle.image, angleLabel: 'Vista Principal', caption: vehicle.subtitle }]
+          }
+        />
       )}
     </AnimatePresence>
   );

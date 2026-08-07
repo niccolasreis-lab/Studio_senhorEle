@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { useLanguage } from '../i18n/LanguageContext';
+import { buildWhatsAppLink } from '../config/contact';
 
 interface InquireModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export default function InquireModal({
       .join('\n');
 
     window.open(
-      `https://wa.me/5511947251630?text=${encodeURIComponent(text)}`,
+      buildWhatsAppLink(text),
       '_blank',
       'noopener,noreferrer',
     );

@@ -1,9 +1,27 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { playMechanicalClick } from '../utils/audio';
 
 export default function Hero() {
   const { t } = useLanguage();
+
+  const handleExploreClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    playMechanicalClick('click');
+    const targetElement = document.getElementById('about');
+    if (targetElement) {
+      const navHeight = 80;
+      const elementPosition = targetElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+    window.history.pushState(null, '', '#about');
+  };
 
   return (
     <section className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between pt-24 pb-10 md:pt-32 md:pb-16 overflow-hidden">
@@ -14,7 +32,6 @@ export default function Hero() {
           loop
           muted
           playsInline
-          poster="/assets/images/aero-willys-1967.jpg"
           className="w-full h-full object-cover scale-105"
         >
           <source src="/assets/videos/hero-video.mp4" type="video/mp4" />
@@ -34,25 +51,23 @@ export default function Hero() {
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 flex flex-col items-center text-center px-margin-mobile max-w-4xl lg:max-w-5xl mx-auto my-auto py-8"
       >
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.2, ease: 'easeOut' }}
-          className="font-headline-lg text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-parchment tracking-tight mb-8 font-serif drop-shadow-2xl leading-[1.1] sm:leading-[1.08]"
+        {/* Logotipo em Destaque com Fade Luxuoso */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="relative flex flex-col items-center justify-center group"
         >
-          {t.hero.title}
-        </motion.h1>
+          {/* Sutil brilho de fundo (Glow Amber) */}
+          <div className="absolute -inset-4 bg-amber-glow/20 rounded-full blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none" />
 
-        {/* Subtitle / Paragraph */}
-        <motion.p 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.35, ease: 'easeOut' }}
-          className="font-body-lg text-lg sm:text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed drop-shadow-md tracking-wide px-4"
-        >
-          {t.hero.subtitle}
-        </motion.p>
+          {/* Logo Image em Alta Resolução */}
+          <img
+            src="/assets/images/logo-senhorele-hero.png"
+            alt="Studio SenhorEle - Coleção Air Cooled"
+            className="relative w-72 sm:w-96 md:w-[440px] lg:w-[500px] max-w-full h-auto object-contain drop-shadow-[0_12px_35px_rgba(0,0,0,0.85)] filter transition-transform duration-500 hover:scale-[1.02]"
+          />
+        </motion.div>
       </motion.div>
       
       {/* Scroll Down Indicator with Fade & Pulse */}
@@ -66,7 +81,8 @@ export default function Hero() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          href="#about" 
+          href="#about"
+          onClick={handleExploreClick}
           className="group flex flex-col items-center transition-colors cursor-pointer"
           aria-label={t.hero.explore}
         >

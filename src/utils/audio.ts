@@ -47,7 +47,7 @@ export function toggleAudioMute(): boolean {
 }
 
 // Play a subtle mechanical vintage switch/click sound
-export function playMechanicalClick(type: 'click' | 'modal' | 'switch' = 'click') {
+export function playMechanicalClick(type: 'click' | 'modal' | 'switch' | 'slide' = 'click') {
   if (isMuted) return;
   try {
     const ctx = getAudioContext();
@@ -115,6 +115,23 @@ export function playMechanicalClick(type: 'click' | 'modal' | 'switch' = 'click'
 
       osc.start(now);
       osc.stop(now + 0.03);
+    } else if (type === 'slide') {
+      // Vintage mechanical slide shutter click
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(850, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.035);
+
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.035);
     }
   } catch {
     // Ignore audio restrictions

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
+import { buildWhatsAppLink, WHATSAPP_DISPLAY } from '../config/contact';
 
 interface FloatingContactWidgetProps {
   onOpenInquire?: () => void;
@@ -38,7 +39,7 @@ export default function FloatingContactWidget({ onOpenInquire }: FloatingContact
             <motion.a
               whileHover={{ scale: 1.04, x: -3 }}
               whileTap={{ scale: 0.96 }}
-              href="https://wa.me/5511947251630"
+              href={buildWhatsAppLink('Olá, Studio SenhorEle!')}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleOpenOption()}
@@ -46,7 +47,7 @@ export default function FloatingContactWidget({ onOpenInquire }: FloatingContact
             >
               <div className="flex flex-col text-right">
                 <span className="font-label-caps text-xs font-bold leading-tight">{t.floating.whatsapp}</span>
-                <span className="text-[11px] opacity-90 font-mono">(11) 94725-1630</span>
+                <span className="text-[11px] opacity-90 font-mono">{WHATSAPP_DISPLAY}</span>
               </div>
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
@@ -76,23 +77,6 @@ export default function FloatingContactWidget({ onOpenInquire }: FloatingContact
               </div>
             </motion.a>
 
-            {/* Inquire Modal Option */}
-            {onOpenInquire && (
-              <motion.button
-                whileHover={{ scale: 1.04, x: -3 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleOpenOption(onOpenInquire)}
-                className="flex items-center space-x-3 bg-secondary hover:bg-amber-glow text-deep-charcoal px-4 py-3 rounded-2xl shadow-[0_10px_25px_rgba(176,131,50,0.35)] transition-all cursor-pointer group"
-              >
-                <div className="flex flex-col text-right">
-                  <span className="font-label-caps text-xs font-bold leading-tight">{t.floating.inquire}</span>
-                  <span className="text-[11px] opacity-80">Studio Senhorele</span>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-deep-charcoal/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">calendar_month</span>
-                </div>
-              </motion.button>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

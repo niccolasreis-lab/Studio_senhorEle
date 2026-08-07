@@ -19,16 +19,16 @@ export default function InstagramCard({ post, index }: InstagramCardProps) {
   const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
 
   return (
-    <div ref={tiltRef} {...tiltProps} className="relative rounded-2xl">
+    <div ref={tiltRef} {...tiltProps} className="relative rounded-2xl h-full">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: (index % 3) * 0.1, ease: 'easeOut' }}
-        className="bg-surface-container-low/90 backdrop-blur-sm border border-surface-variant/40 rounded-2xl overflow-hidden hover:border-secondary/60 transition-colors duration-300 group flex flex-col justify-between shadow-lg hover:shadow-2xl relative"
+        className="bg-surface-container-low/90 backdrop-blur-sm border border-surface-variant/40 rounded-2xl overflow-hidden hover:border-secondary/60 transition-colors duration-300 group flex flex-col justify-between shadow-lg hover:shadow-2xl relative h-full"
       >
         {/* Amber Glare Overlay */}
         <div className="absolute inset-0 z-30 rounded-2xl pointer-events-none" {...glareProps} />
-      <div>
+      <div className="flex-1 flex flex-col justify-between">
         {/* Instagram Header with Profile Handle */}
         <div className="p-3 bg-surface-container-high/60 border-b border-surface-variant/30 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { CustomVehicleService, CustomVehicle } from '../services/customVehicleService';
-import { CloudImageService } from '../services/cloudImageService';
+import { SupabaseService } from '../services/supabaseService';
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -26,16 +26,63 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [activeTab, setActiveTab] = useState<'form' | 'express'>('form');
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
-  // Express Smart State
-  const [expressBrand, setExpressBrand] = useState('Chevrolet');
-  const [expressModel, setExpressModel] = useState('Opala Comodoro');
-  const [expressYear, setExpressYear] = useState('1988');
+  // Express Smart State (pre-seleção de Marca / Modelo / Ano)
+  const [expressBrand, setExpressBrand] = useState('Volkswagen');
+  const [expressModel, setExpressModel] = useState('Fusca');
+  const [expressYear, setExpressYear] = useState('1976');
 
-  // Cloud Image state
-  const [isUploadingCloud, setIsUploadingCloud] = useState(false);
-  const [cloudError, setCloudError] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [cloudProvider, setCloudProvider] = useState<string>('');
+  const PRESET_BRANDS: { brand: string; models: string[] }[] = [
+    {
+      brand: 'Volkswagen',
+      models: [
+        'Fusca', 'Fusca 1300', 'Fusca 1500', 'Fusca 1600',
+        'Kombi', 'Kombi Corujinha', 'Brasília', 'Gol', 'Voyage',
+      ],
+    },
+    {
+      brand: 'Chevrolet',
+      models: [
+        'Opala', 'Opala Comodoro', 'Opala Diplomata', 'Chevette', 'Caravan', 'Veraneio', 'Monza',
+      ],
+    },
+    {
+      brand: 'Ford',
+      models: ['Maverick', 'Maverick GT', 'Galaxie', 'Corcel', 'Del Rey', 'Escort', 'F100'],
+    },
+    {
+      brand: 'Porsche',
+      models: ['911', '911 Carrera', '911 Turbo', '912', '914', '356'],
+    },
+    {
+      brand: 'Aero Willys',
+      models: ['Aero Willys', 'Itamaraty', 'Itamaraty Executivo'],
+    },
+    {
+      brand: 'Fiat',
+      models: ['147', 'Uno', 'Palio', 'Brava', 'Tempra'],
+    },
+  ];
+
+  const PRESET_YEARS: string[] = (() => {
+    const years: string[] = [];
+    for (let y = 2026; y >= 1950; y--) years.push(String(y));
+    return years;
+  })();
+
+  const selectedBrandModels =
+    PRESET_BRANDS.find((b) => b.brand === expressBrand)?.models || [];
+
+  const handleExpressBrandChange = (value: string) => {
+    setExpressBrand(value);
+    const models = PRESET_BRANDS.find((b) => b.brand === value)?.models || [];
+    setExpressModel(models[0] || '');
+  };
+
+  // Cloud Image state (3 image slots)
+  const IMAGE_SLOTS = 3;
+  const IMAGE_LABELS = ['Imagem 1', 'Imagem 2', 'Imagem 3'];
+  const [selectedFiles, setSelectedFiles] = useState<(File | null)[]>(Array(IMAGE_SLOTS).fill(null));
+  const [cloudErrors, setCloudErrors] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
 
   // Form state for vehicle
   const [title, setTitle] = useState('');
@@ -47,9 +94,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [color, setColor] = useState('');
   const [power, setPower] = useState('');
   const [description, setDescription] = useState('');
-  const [image, setImage] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
+  const [imageSlots, setImageSlots] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
+  const [imagePreviews, setImagePreviews] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
   const [successMsg, setSuccessMsg] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // Custom & Base vehicles list
   const [allVehicles, setAllVehicles] = useState<CustomVehicle[]>([]);
@@ -64,47 +113,28 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     }
   }, [isAuthenticated, isOpen]);
 
-  // Handle local image file upload & preview
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle local image file upload & preview for a given slot
+  const handleImageChange = (slot: number) => (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setCloudError('');
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setImage(result);
-        setImagePreview(result);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    const nextFiles = [...selectedFiles];
+    const nextErrors = [...cloudErrors];
+    nextFiles[slot] = file;
+    nextErrors[slot] = '';
+    setSelectedFiles(nextFiles);
+    setCloudErrors(nextErrors);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setImageSlots((prev) => { const n = [...prev]; n[slot] = result; return n; });
+      setImagePreviews((prev) => { const n = [...prev]; n[slot] = result; return n; });
+    };
+    reader.readAsDataURL(file);
   };
 
-  // Upload image to Cloud (ImgBB / Imgur)
-  const handleUploadToCloud = async () => {
-    const target = selectedFile || image;
-    if (!target) {
-      alert('Por favor, selecione primeiro um arquivo de imagem.');
-      return;
-    }
-
-    try {
-      playMechanicalClick('click');
-      setIsUploadingCloud(true);
-      setCloudError('');
-
-      const result = await CloudImageService.uploadSmart(target);
-      setImage(result.url);
-      setImagePreview(result.url);
-      setCloudProvider(result.provider);
-      playMechanicalClick('modal');
-    } catch (err: any) {
-      setCloudError(err?.message || 'Erro ao hospedar na nuvem. Verifique sua conexão.');
-    } finally {
-      setIsUploadingCloud(false);
-    }
-  };
-
+  // Upload de imagem: feito exclusivamente no momento de "Salvar Alterações".
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
     playMechanicalClick('click');
@@ -136,10 +166,12 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setColor('');
     setPower('');
     setDescription('');
-    setImage('');
-    setImagePreview('');
-    setSelectedFile(null);
-    setCloudProvider('');
+    setImageSlots(Array(IMAGE_SLOTS).fill(''));
+    setImagePreviews(Array(IMAGE_SLOTS).fill(''));
+    setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
+    setCloudErrors(Array(IMAGE_SLOTS).fill(''));
+    setSaveError('');
+    setSaving(false);
   };
 
   // Start editing a vehicle (including original 7 classics)
@@ -155,8 +187,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setColor(v.color || '');
     setPower(v.power || '');
     setDescription(v.description || '');
-    setImage(v.image);
-    setImagePreview(v.image);
+    const imgs = [v.image, v.image2 || '', v.image3 || ''];
+    setImageSlots(imgs);
+    setImagePreviews(imgs);
+    setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
+    setCloudErrors(Array(IMAGE_SLOTS).fill(''));
     setActiveTab('form');
   };
 
@@ -170,18 +205,18 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setYear(spec.year);
     setEngine(spec.engine);
     setTransmission(spec.transmission);
-    setColor(spec.color || '');
-    setPower(spec.power || '');
-    setDescription(spec.description || '');
-    setImage(spec.image);
-    setImagePreview(spec.image);
+    setDescription(spec.presentationText || spec.description || '');
+    setImageSlots([spec.image, '', '']);
+    setImagePreviews([spec.image, '', '']);
     setActiveTab('form');
     setSuccessMsg(`Ficha técnica de "${spec.title}" preenchida automaticamente!`);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  // Submit Add or Update Vehicle
-  const handleSubmitVehicle = (e: FormEvent) => {
+  // Submit Add or Update Vehicle — upload único de todas as imagens pendentes
+  // e depois salva. Um único botão lida com incluir/editar/excluir imagens e
+  // com a descrição.
+  const handleSubmitVehicle = async (e: FormEvent) => {
     e.preventDefault();
     playMechanicalClick('click');
 
@@ -190,50 +225,91 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       return;
     }
 
-    const defaultShareId = shareId.trim() || `SRL-${title.substring(0, 3).toUpperCase()}-${year.trim()}`;
-    const defaultImage = image || '/assets/images/vw-fusca-cal-style-1968.jpg';
+    setSaving(true);
+    setSaveError('');
 
-    if (editingVehicleId) {
-      // UPDATE EXISTING VEHICLE
-      CustomVehicleService.updateCustomVehicle(editingVehicleId, {
-        title: title.trim(),
-        subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
-        shareId: defaultShareId,
-        year: year.trim(),
-        engine: engine.trim() || 'Air-Cooled Boxer',
-        transmission: transmission.trim() || 'Manual 4 Marchas',
-        color: color.trim(),
-        power: power.trim(),
-        description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
-        image: defaultImage,
-      });
+    try {
+      // 1. Envia ao Supabase todas as imagens pendentes (selecionadas e ainda não hospedadas).
+      const uploadedUrls = [...imageSlots];
+      for (let slot = 0; slot < IMAGE_SLOTS; slot++) {
+        const file = selectedFiles[slot];
+        if (!file) continue;
+        const url = await SupabaseService.uploadImage(file);
+        if (!url) {
+          throw new Error(`Falha ao enviar a ${IMAGE_LABELS[slot]} para o Storage do Supabase.`);
+        }
+        uploadedUrls[slot] = url;
+      }
 
-      setSuccessMsg(`Veículo "${title.trim()}" atualizado com sucesso!`);
-    } else {
-      // ADD NEW VEHICLE
-      CustomVehicleService.addCustomVehicle({
-        title: title.trim(),
-        subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
-        shareId: defaultShareId,
-        year: year.trim(),
-        engine: engine.trim() || 'Air-Cooled Boxer',
-        transmission: transmission.trim() || 'Manual 4 Marchas',
-        color: color.trim(),
-        power: power.trim(),
-        description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
-        image: defaultImage,
-      });
+      const defaultShareId = shareId.trim() || `SRL-${title.substring(0, 3).toUpperCase()}-${year.trim()}`;
+      const defaultImage = uploadedUrls[0] || '/assets/images/vw-fusca-cal-style-1968.jpg';
+      const defaultImage2 = uploadedUrls[1] || '';
+      const defaultImage3 = uploadedUrls[2] || '';
 
-      setSuccessMsg(`Veículo "${title.trim()}" cadastrado no acervo!`);
+      // 2. Salva o veículo (inclusão ou edição) com as URLs já confirmadas.
+      if (editingVehicleId) {
+        CustomVehicleService.updateCustomVehicle(editingVehicleId, {
+          title: title.trim(),
+          subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
+          shareId: defaultShareId,
+          year: year.trim(),
+          engine: engine.trim() || 'Air-Cooled Boxer',
+          transmission: transmission.trim() || 'Manual 4 Marchas',
+          color: color.trim(),
+          power: power.trim(),
+          description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          image: defaultImage,
+          image2: defaultImage2,
+          image3: defaultImage3,
+        });
+        setSuccessMsg(`Veículo "${title.trim()}" atualizado com sucesso!`);
+      } else {
+        CustomVehicleService.addCustomVehicle({
+          title: title.trim(),
+          subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
+          shareId: defaultShareId,
+          year: year.trim(),
+          engine: engine.trim() || 'Air-Cooled Boxer',
+          transmission: transmission.trim() || 'Manual 4 Marchas',
+          color: color.trim(),
+          power: power.trim(),
+          description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          image: defaultImage,
+          image2: defaultImage2,
+          image3: defaultImage3,
+        });
+        setSuccessMsg(`Veículo "${title.trim()}" cadastrado no acervo!`);
+      }
+
+      refreshVehiclesList();
+      if (onVehicleAdded) onVehicleAdded();
+      resetForm();
+    } catch (err: any) {
+      setSaveError(err?.message || 'Não foi possível salvar. Verifique a conexão.');
+    } finally {
+      setSaving(false);
     }
-
-    refreshVehiclesList();
-    if (onVehicleAdded) onVehicleAdded();
-    resetForm();
 
     setTimeout(() => {
       setSuccessMsg('');
     }, 4000);
+  };
+
+  // Remove a imagem de um slot (mantém vazio até salvar).
+  const handleRemoveImage = (slot: number) => {
+    playMechanicalClick('click');
+    const nextFiles = [...selectedFiles];
+    const nextSlots = [...imageSlots];
+    const nextPreviews = [...imagePreviews];
+    const nextErrors = [...cloudErrors];
+    nextFiles[slot] = null;
+    nextSlots[slot] = '';
+    nextPreviews[slot] = '';
+    nextErrors[slot] = '';
+    setSelectedFiles(nextFiles);
+    setImageSlots(nextSlots);
+    setImagePreviews(nextPreviews);
+    setCloudErrors(nextErrors);
   };
 
   const handleDeleteVehicle = (id: string, vehicleTitle: string) => {
@@ -411,43 +487,51 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                         Gerador Inteligente de Ficha Técnica (Marca, Modelo & Ano)
                       </h4>
                     </div>
-
                     <p className="text-xs text-on-surface-variant">
-                      Informe a Marca, Modelo e Ano para que o assistente gere a motorização, história, câmbio e especificações de luxo automaticamente:
+                      Informe apenas a Marca, o Modelo e o Ano. O assistente gera automaticamente a apresentação, a ficha técnica e o contexto histórico do veículo, utilizando somente informações compatíveis com a versão e o período.
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block font-label-caps text-[11px] text-on-surface-variant mb-1">Marca do Veículo *</label>
-                        <input
-                          type="text"
+                        <select
                           value={expressBrand}
-                          onChange={(e) => setExpressBrand(e.target.value)}
-                          placeholder="Ex: Chevrolet, VW, Ford, Porsche"
-                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400"
-                        />
+                          onChange={(e) => handleExpressBrandChange(e.target.value)}
+                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          {PRESET_BRANDS.map((b) => (
+                            <option key={b.brand} value={b.brand}>{b.brand}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block font-label-caps text-[11px] text-on-surface-variant mb-1">Modelo do Veículo *</label>
-                        <input
-                          type="text"
+                        <select
                           value={expressModel}
                           onChange={(e) => setExpressModel(e.target.value)}
-                          placeholder="Ex: Opala Comodoro, Maverick GT"
-                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400"
-                        />
+                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          {selectedBrandModels.length === 0 && (
+                            <option value="">— Selecione a marca primeiro —</option>
+                          )}
+                          {selectedBrandModels.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block font-label-caps text-[11px] text-on-surface-variant mb-1">Ano de Fabricação *</label>
-                        <input
-                          type="text"
+                        <select
                           value={expressYear}
                           onChange={(e) => setExpressYear(e.target.value)}
-                          placeholder="Ex: 1988"
-                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400"
-                        />
+                          className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          {PRESET_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -457,7 +541,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       className="w-full bg-amber-500 hover:bg-amber-400 text-deep-charcoal font-label-caps font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer shadow-lg flex items-center justify-center space-x-2"
                     >
                       <span className="material-symbols-outlined text-[18px]">bolt</span>
-                      <span>Gerar Ficha Técnica & Preencher Formulário</span>
+                      <span>Gerar Ficha do Veículo</span>
                     </button>
 
                     {/* Presets de Exemplo 1-Clique */}
@@ -637,54 +721,53 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       />
                     </div>
 
-                    {/* Image Upload & Preview with ImgBB / Imgur CDN */}
-                    <div className="space-y-2">
+                    {/* Image Upload & Preview (Imagem 1, 2 e 3) */}
+                    <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <label className="block font-label-caps text-xs text-on-surface-variant">Foto do Veículo (Upload do Computador ou Nuvem)</label>
-                        <span className="text-[10px] text-secondary font-mono flex items-center space-x-1">
-                          <span className="material-symbols-outlined text-[13px]">cloud</span>
-                          <span>ImgBB & Imgur Cloud Ready</span>
-                        </span>
+                        <label className="block font-label-caps text-xs text-on-surface-variant">Imagens do Veículo (Até 3: Imagem 1, Imagem 2 e Imagem 3)</label>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="block w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-label-caps file:bg-secondary/20 file:text-secondary hover:file:bg-secondary/30 cursor-pointer"
-                        />
-
-                        {selectedFile && (
-                          <button
-                            type="button"
-                            disabled={isUploadingCloud}
-                            onClick={handleUploadToCloud}
-                            className="bg-sky-900/40 hover:bg-sky-800/60 border border-sky-400/50 text-sky-200 font-label-caps text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0 flex items-center justify-center space-x-1.5 font-bold disabled:opacity-50"
-                          >
-                            <span className={`material-symbols-outlined text-[16px] ${isUploadingCloud ? 'animate-spin' : ''}`}>
-                              {isUploadingCloud ? 'sync' : 'cloud_upload'}
-                            </span>
-                            <span>{isUploadingCloud ? 'Enviando...' : 'Hospedar na Nuvem'}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {cloudError && (
-                        <p className="text-xs text-rose-400 font-label-caps pt-1">{cloudError}</p>
-                      )}
-
-                      {imagePreview && (
-                        <div className="mt-3 relative h-40 w-full rounded-xl overflow-hidden border border-secondary/40 shadow-md">
-                          <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                          {image.startsWith('http') && (
-                            <div className="absolute top-2 right-2 bg-emerald-950/90 border border-emerald-400/60 text-emerald-300 font-label-caps text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-md">
-                              <span className="material-symbols-outlined text-[13px]">cloud_done</span>
-                              <span>Hospedado via {cloudProvider || (image.includes('ibb.co') ? 'ImgBB CDN' : 'Cloud CDN')}</span>
+                      {Array.from({ length: IMAGE_SLOTS }).map((_, slot) => {
+                        return (
+                          <div key={slot} className="p-3 rounded-xl border border-surface-variant/30 bg-surface-container/40 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-label-caps text-[11px] text-secondary font-bold">
+                                {IMAGE_LABELS[slot]}
+                              </span>
+                              {imageSlots[slot] && (
+                                <span className="text-[10px] text-on-surface-variant font-mono">
+                                  {imageSlots[slot].startsWith('http') ? 'OK' : 'local'}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange(slot)}
+                                className="block w-full text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-label-caps file:bg-secondary/20 file:text-secondary hover:file:bg-secondary/30 cursor-pointer"
+                              />
+                            </div>
+
+                            {cloudErrors[slot] && (
+                              <p className="text-xs text-rose-400 font-label-caps pt-1">{cloudErrors[slot]}</p>
+                            )}
+
+                            {imagePreviews[slot] && (
+                              <div className="relative h-40 w-full rounded-xl overflow-hidden border border-secondary/40 shadow-md">
+                                <img src={imagePreviews[slot]} alt={`Preview ${IMAGE_LABELS[slot]}`} className="w-full h-full object-cover" />
+                                {imageSlots[slot].startsWith('http') && (
+                                  <div className="absolute top-2 right-2 bg-emerald-950/90 border border-emerald-400/60 text-emerald-300 font-label-caps text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-md">
+                                    <span className="material-symbols-outlined text-[13px]">cloud_done</span>
+                                    <span>Supabase Storage</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div className="flex gap-3 pt-2">

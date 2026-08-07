@@ -100,6 +100,18 @@ export interface Translations {
     matchingNumbers: string;
     yes: string;
     no: string;
+    doubtTitle: string;
+    doubtPlaceholder: string;
+    doubtSendButton: string;
+    doubtEmptyHint: string;
+  };
+  galleryModal: {
+    viewGallery: string;
+    photoCounter: string;
+    keyboardHint: string;
+    close: string;
+    zoomHD: string;
+    angleLabel: string;
   };
   footer: {
     description: string;
@@ -121,7 +133,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Coleção',
       about: 'Nossa História',
       purpose: 'Propósito',
-      inquire: 'Consultar / Agendar',
+      inquire: 'Contato',
     },
     hero: {
       title: 'Studio SenhorEle',
@@ -182,8 +194,8 @@ export const translations: Record<Language, Translations> = {
       badge: 'Destaque Instagram',
     },
     inquire: {
-      title: 'Consulta & Agendamento',
-      subtitle: 'Entre em contato diretamente com nossa curadoria para agendar uma visita presencial ou tirar dúvidas sobre o acervo.',
+      title: 'Entrar em Contato',
+      subtitle: 'Entre em contato diretamente com nossa curadoria para tirar dúvidas ou obter mais informações sobre o acervo.',
       carSelected: 'Veículo de Interesse',
       nameLabel: 'Seu Nome',
       namePlaceholder: 'Ex: Roberto Silva',
@@ -192,8 +204,8 @@ export const translations: Record<Language, Translations> = {
       emailLabel: 'E-mail',
       emailPlaceholder: 'Ex: roberto@exemplo.com',
       messageLabel: 'Mensagem',
-      messagePlaceholder: 'Descreva seu interesse, dúvidas ou disponibilidade para agendamento...',
-      submitButton: 'Enviar Consulta',
+      messagePlaceholder: 'Descreva seu interesse ou dúvidas sobre o acervo...',
+      submitButton: 'Enviar Mensagem',
       whatsappDirect: 'Falar diretamente no WhatsApp',
       successMessage: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
       close: 'Fechar',
@@ -215,18 +227,30 @@ export const translations: Record<Language, Translations> = {
       matchingNumbers: 'Matching Numbers',
       yes: 'Sim',
       no: 'Não',
+      doubtTitle: 'Tem alguma dúvida sobre este carro?',
+      doubtPlaceholder: 'Digite sua dúvida sobre este veículo...',
+      doubtSendButton: 'Enviar pelo WhatsApp',
+      doubtEmptyHint: 'Digite sua dúvida antes de continuar.',
+    },
+    galleryModal: {
+      viewGallery: 'Ver em Galeria Fullscreen',
+      photoCounter: 'Foto {current} de {total}',
+      keyboardHint: 'Use as setas (← →) para navegar ou ESC para fechar',
+      close: 'Fechar Galeria',
+      zoomHD: 'Alta Resolução HD',
+      angleLabel: 'Ângulo de Exposição',
     },
     footer: {
       description: 'Curadoria especializada em clássicos automotivos VW Air-Cooled e Porsche. Preservando histórias e movendo paixões.',
       navigationTitle: 'Navegação',
       contactTitle: 'Contato & Localização',
       hoursTitle: 'Atendimento',
-      hoursText: 'Segunda a Sexta: 09h às 18h\nSábados: Apenas com agendamento prévio',
+      hoursText: 'Segunda a Sexta: 09h às 18h',
       rights: 'Todos os direitos reservados. Studio SenhorEle.',
     },
     floating: {
       whatsapp: 'WhatsApp Curadoria',
-      inquire: 'Agendar Visita',
+      inquire: 'Enviar Mensagem',
     },
   },
   en: {
@@ -234,7 +258,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Collection',
       about: 'Our Story',
       purpose: 'Purpose',
-      inquire: 'Inquire / Schedule',
+      inquire: 'Contact',
     },
     hero: {
       title: 'Studio SenhorEle',
@@ -295,8 +319,8 @@ export const translations: Record<Language, Translations> = {
       badge: 'Instagram Highlight',
     },
     inquire: {
-      title: 'Inquire & Private Viewing',
-      subtitle: 'Get in touch with our curation team to schedule a private viewing or ask questions about any collection piece.',
+      title: 'Contact Us',
+      subtitle: 'Get in touch directly with our curation team to ask questions or get more information about the collection.',
       carSelected: 'Vehicle of Interest',
       nameLabel: 'Your Name',
       namePlaceholder: 'e.g. Robert Smith',
@@ -305,8 +329,8 @@ export const translations: Record<Language, Translations> = {
       emailLabel: 'Email Address',
       emailPlaceholder: 'e.g. robert@example.com',
       messageLabel: 'Message',
-      messagePlaceholder: 'Tell us about your interest, questions, or preferred visit date...',
-      submitButton: 'Send Inquiry',
+      messagePlaceholder: 'Tell us about your interest or questions...',
+      submitButton: 'Send Message',
       whatsappDirect: 'Contact on WhatsApp Directly',
       successMessage: 'Message sent successfully! Our curation team will contact you shortly.',
       close: 'Close',
@@ -328,18 +352,30 @@ export const translations: Record<Language, Translations> = {
       matchingNumbers: 'Matching Numbers',
       yes: 'Yes',
       no: 'No',
+      doubtTitle: 'Have a question about this car?',
+      doubtPlaceholder: 'Type your question about this vehicle...',
+      doubtSendButton: 'Send via WhatsApp',
+      doubtEmptyHint: 'Please type your question before continuing.',
+    },
+    galleryModal: {
+      viewGallery: 'View Fullscreen Art Gallery',
+      photoCounter: 'Photo {current} of {total}',
+      keyboardHint: 'Use arrow keys (← →) to navigate or ESC to close',
+      close: 'Close Gallery',
+      zoomHD: 'High Definition HD',
+      angleLabel: 'Exhibition Angle',
     },
     footer: {
       description: 'Specialized curation of classic VW Air-Cooled and Porsche vehicles. Preserving history and moving passion.',
       navigationTitle: 'Navigation',
       contactTitle: 'Contact & Location',
       hoursTitle: 'Opening Hours',
-      hoursText: 'Monday to Friday: 09:00 - 18:00\nSaturdays: By private appointment only',
+      hoursText: 'Monday to Friday: 09:00 - 18:00',
       rights: 'All rights reserved. Studio SenhorEle.',
     },
     floating: {
       whatsapp: 'WhatsApp Curation',
-      inquire: 'Book Private Visit',
+      inquire: 'Send Message',
     },
   },
   de: {
@@ -347,7 +383,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Kollektion',
       about: 'Über uns',
       purpose: 'Philosophie',
-      inquire: 'Anfrage / Termin',
+      inquire: 'Kontakt',
     },
     hero: {
       title: 'Studio SenhorEle',
@@ -408,8 +444,8 @@ export const translations: Record<Language, Translations> = {
       badge: 'Instagram Highlight',
     },
     inquire: {
-      title: 'Anfrage & Besichtigungstermin',
-      subtitle: 'Kontaktieren Sie unser Experten-Team für einen privaten Besichtigungstermin oder Fragen zu unserem Bestand.',
+      title: 'Kontakt aufnehmen',
+      subtitle: 'Kontaktieren Sie unser Experten-Team für Fragen zu unserem Bestand.',
       carSelected: 'Gewähltes Fahrzeug',
       nameLabel: 'Ihr Name',
       namePlaceholder: 'z.B. Hans Müller',
@@ -418,8 +454,8 @@ export const translations: Record<Language, Translations> = {
       emailLabel: 'E-Mail-Adresse',
       emailPlaceholder: 'z.B. hans@beispiel.de',
       messageLabel: 'Nachricht',
-      messagePlaceholder: 'Teilen Sie uns Ihr Anliegen oder Ihren Wunschtermin mit...',
-      submitButton: 'Anfrage Absenden',
+      messagePlaceholder: 'Teilen Sie uns Ihr Anliegen oder Ihre Fragen mit...',
+      submitButton: 'Nachricht Absenden',
       whatsappDirect: 'Direkt per WhatsApp kontaktieren',
       successMessage: 'Vielen Dank! Unser Team wird sich in Kürze bei Ihnen melden.',
       close: 'Schließen',
@@ -441,18 +477,30 @@ export const translations: Record<Language, Translations> = {
       matchingNumbers: 'Matching Numbers',
       yes: 'Ja',
       no: 'Nein',
+      doubtTitle: 'Fragen zu diesem Fahrzeug?',
+      doubtPlaceholder: 'Geben Sie eine Frage zu diesem Fahrzeug ein...',
+      doubtSendButton: 'Über WhatsApp senden',
+      doubtEmptyHint: 'Bitte geben Sie zuerst eine Frage ein.',
+    },
+    galleryModal: {
+      viewGallery: 'In Vollbild-Galerie ansehen',
+      photoCounter: 'Foto {current} von {total}',
+      keyboardHint: 'Nutzen Sie die Pfeiltasten (← →) oder ESC zum Schließen',
+      close: 'Galerie Schließen',
+      zoomHD: 'Hohe Auflösung HD',
+      angleLabel: 'Ausstellungswinkel',
     },
     footer: {
       description: 'Spezialisierte Kuratierung von VW Luftgekühlt- und Porsche-Klassikern. Geschichte bewahren und Leidenschaft bewegen.',
       navigationTitle: 'Navigation',
       contactTitle: 'Kontakt & Standort',
       hoursTitle: 'Öffnungszeiten',
-      hoursText: 'Montag bis Freitag: 09:00 - 18:00 Uhr\nSamstag: Nur nach vorheriger Terminvereinbarung',
+      hoursText: 'Montag bis Freitag: 09:00 - 18:00 Uhr',
       rights: 'Alle Rechte vorbehalten. Studio SenhorEle.',
     },
     floating: {
       whatsapp: 'WhatsApp Beratung',
-      inquire: 'Termin Buchen',
+      inquire: 'Nachricht Senden',
     },
   },
 };

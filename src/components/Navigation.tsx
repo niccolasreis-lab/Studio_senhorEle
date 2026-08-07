@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import { buildWhatsAppLink } from '../config/contact';
 
 interface NavigationProps {
   onOpenInquire?: () => void;
@@ -29,6 +30,41 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToSection = (targetId: string) => {
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      const navHeight = 80;
+      const elementPosition = targetElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    playMechanicalClick('click');
+    setIsOpen(false);
+    
+    setTimeout(() => {
+      scrollToSection(targetId);
+    }, 50);
+
+    window.history.pushState(null, '', `#${targetId}`);
+  };
+
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      setTimeout(() => {
+        scrollToSection(hash);
+      }, 200);
+    }
+  }, []);
+
   return (
     <>
       {/* Scroll Progress Indicator Bar */}
@@ -48,7 +84,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
           <a href="#" aria-label="Studio Senhorele - Início" className="flex items-center space-x-3 group">
             <div className="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border border-secondary/40 shadow-md flex items-center justify-center bg-surface-container-low group-hover:border-secondary transition-all">
               <img 
-                src="/assets/images/logo-senhorele-192.jpg"
+                src="/assets/images/logo-senhorele-hero.png"
                 alt="Logotipo Studio Senhorele" 
                 width="192"
                 height="192"
@@ -57,14 +93,14 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
             </div>
           </a>
 
-          <ul className="hidden md:flex space-x-6 lg:space-x-10 items-center">
+          <ul className="hidden sm:flex space-x-2 sm:space-x-4 md:space-x-8 lg:space-x-10 items-center">
             <li>
               <motion.a 
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={() => playMechanicalClick('click')}
-                className="font-label-caps text-sm md:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-2 py-1 tracking-wider" 
+                onClick={(e) => handleNavClick(e, 'collection')}
+                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
                 href="#collection"
               >
                 {t.nav.collection}
@@ -75,8 +111,8 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={() => playMechanicalClick('click')}
-                className="font-label-caps text-sm md:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-2 py-1 tracking-wider" 
+                onClick={(e) => handleNavClick(e, 'about')}
+                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
                 href="#about"
               >
                 {t.nav.about}
@@ -87,36 +123,36 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={() => playMechanicalClick('click')}
-                className="font-label-caps text-sm md:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-2 py-1 tracking-wider" 
-                href="#about"
+                onClick={(e) => handleNavClick(e, 'purpose')}
+                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
+                href="#purpose"
               >
                 {t.nav.purpose}
               </motion.a>
             </li>
           </ul>
 
-          <div className="flex items-center space-x-4 md:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-6">
             <LanguageSwitcher />
 
-            <motion.button 
+            <motion.a 
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              onClick={() => {
-                playMechanicalClick('modal');
-                onOpenInquire?.();
-              }}
-              className="hidden md:flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-sm md:text-base px-6 md:px-7 py-3 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer shadow-md font-semibold tracking-wider"
+              href={buildWhatsAppLink('')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => playMechanicalClick('click')}
+              className="hidden sm:flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-xs md:text-sm lg:text-base px-3 sm:px-4 md:px-5 lg:px-6 py-2 md:py-3 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer shadow-md font-semibold tracking-wider whitespace-nowrap"
             >
               {t.nav.inquire}
-            </motion.button>
+            </motion.a>
 
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="md:hidden text-on-surface-variant hover:text-primary transition-colors p-1"
+              className="sm:hidden text-on-surface-variant hover:text-primary transition-colors p-1"
               onClick={() => {
                 playMechanicalClick('click');
                 setIsOpen(!isOpen);
@@ -128,7 +164,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
           </div>
         </div>
         
-        {/* Menu Mobile */}
+        {/* Menu Mobile / Tablet */}
         <AnimatePresence>
           {isOpen && (
             <motion.div 
@@ -136,7 +172,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="md:hidden bg-background/95 backdrop-blur-lg border-t border-surface-variant/30 overflow-hidden"
+              className="sm:hidden bg-background/95 backdrop-blur-lg border-t border-surface-variant/30 overflow-hidden"
             >
               <ul className="flex flex-col py-4 px-margin-mobile">
                 <li className="py-2">
@@ -144,11 +180,8 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                     whileHover={{ scale: 1.03, x: 4 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => {
-                      playMechanicalClick('click');
-                      setIsOpen(false);
-                    }} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider" 
+                    onClick={(e) => handleNavClick(e, 'collection')} 
+                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
                     href="#collection"
                   >
                     {t.nav.collection}
@@ -159,11 +192,8 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                     whileHover={{ scale: 1.03, x: 4 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => {
-                      playMechanicalClick('click');
-                      setIsOpen(false);
-                    }} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider" 
+                    onClick={(e) => handleNavClick(e, 'about')} 
+                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
                     href="#about"
                   >
                     {t.nav.about}
@@ -174,30 +204,29 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                     whileHover={{ scale: 1.03, x: 4 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => {
-                      playMechanicalClick('click');
-                      setIsOpen(false);
-                    }} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider" 
-                    href="#about"
+                    onClick={(e) => handleNavClick(e, 'purpose')} 
+                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
+                    href="#purpose"
                   >
                     {t.nav.purpose}
                   </motion.a>
                 </li>
                 <li className="py-3 mt-4">
-                  <motion.button 
+                  <motion.a 
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ duration: 0.15 }}
+                    href={buildWhatsAppLink('Olá, Studio SenhorEle!')}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => {
-                      playMechanicalClick('modal');
+                      playMechanicalClick('click');
                       setIsOpen(false);
-                      onOpenInquire?.();
                     }}
                     className="w-full flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-base font-semibold px-6 py-3.5 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer"
                   >
                     {t.nav.inquire}
-                  </motion.button>
+                  </motion.a>
                 </li>
               </ul>
             </motion.div>

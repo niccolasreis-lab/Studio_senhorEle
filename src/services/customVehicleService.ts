@@ -1,4 +1,5 @@
 import { SupabaseService } from './supabaseService';
+import { SpecGenerator, makeUniqueShareId } from './specGenerator';
 
 export interface CustomVehicle {
   id: string;
@@ -6,6 +7,8 @@ export interface CustomVehicle {
   title: string;
   subtitle: string;
   image: string;
+  image2?: string;
+  image3?: string;
   year: string;
   engine: string;
   transmission: string;
@@ -14,6 +17,13 @@ export interface CustomVehicle {
   condition?: string;
   description?: string;
   isCustom?: boolean;
+  // Campos gerados automaticamente pela ficha (especificações, história etc.).
+  // Só são preenchidos quando há informação confiável; ausência = ocultar na UI.
+  specs?: { label: string; value: string }[];
+  history?: string[];
+  curiosities?: string[];
+  presentationText?: string;
+  variationsNote?: string;
 }
 
 export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
@@ -253,93 +263,35 @@ export const CustomVehicleService = {
   },
 
   /**
-   * Smart AI/Rule Spec Auto-Fill Generator
-   * Generates complete luxury car specs based on Brand, Model, and Year.
+   * Gerador editorial de ficha técnica.
+   *
+   * A única entrada é MARCA + MODELO + ANO. O resultado usa apenas dados
+   * confiáveis da knowledge base. Cor, condição e proveniência real NUNCA são
+   * inventados: ficam fora do retorno, fazendo a interface ocultar o campo.
    */
   generateSmartVehicleSpecs(brand: string, model: string, year: string): Omit<CustomVehicle, 'id' | 'isCustom'> {
     const cleanBrand = brand.trim();
     const cleanModel = model.trim();
-    const cleanYear = year.trim() || '1985';
+    const cleanYear = year.trim() || '';
 
-    const fullTitle = `${cleanBrand} ${cleanModel}`;
-    const codeSlug = cleanModel.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'CAR';
-    const shareId = `SRL-${codeSlug}-${cleanYear}`;
-
-    // Knowledge database for classic models
-    const lowerModel = cleanModel.toLowerCase();
-    const lowerBrand = cleanBrand.toLowerCase();
-
-    let engine = 'Motorização Original Preservada';
-    let transmission = 'Manual 4 Marchas';
-    let color = 'Cor Original de Época';
-    let power = '100 cv';
-    let condition = 'Placa Preta / Certificado de Coleção';
-    let subtitle = `Clássico de Coleção • ${cleanYear}`;
-    let image = '/assets/images/porsche-911-classic-1973.jpg';
-    let description = `Exemplar da linha ${cleanBrand} ${cleanModel} ${cleanYear} mantido sob elevados padrões de preservação. Mecânica totalmente revisada, tapeçaria original e alto valor histórico.`;
-
-    if (lowerModel.includes('opala')) {
-      engine = '4.1L 250S 6 Cilindros em Linha';
-      transmission = 'Manual 4 Marchas (Assoalho)';
-      color = 'Azul Diplomata Metálico';
-      power = '135 cv';
-      subtitle = `Icone Nacional 6 Cilindros • ${cleanYear}`;
-      image = '/assets/images/aero-willys-1967.jpg';
-      description = `Lendário Chevrolet Opala 6 cilindros. Ronco inconfundível do motor 250S, acabamento de veludo e rodas de época impecáveis.`;
-    } else if (lowerModel.includes('fusca')) {
-      engine = '1600cc Dupla Carburação Air-Cooled';
-      transmission = 'Manual 4 Marchas';
-      color = 'Verde Tahiti / Bege Palha';
-      power = '65 cv';
-      subtitle = `Air-Cooled Heritage • ${cleanYear}`;
-      image = '/assets/images/vw-fusca-cal-style-1968.jpg';
-      description = `VW Fusca restaurado mantendo o charme clássico dos motores boxer refrigerados a ar e tapeçaria xadrez original.`;
-    } else if (lowerModel.includes('kombi')) {
-      engine = '1500cc Box Air-Cooled';
-      transmission = 'Manual 4 Marchas';
-      color = 'Saia e Blusa Turquesa';
-      power = '52 cv';
-      subtitle = `Heritage Bus Vintage • ${cleanYear}`;
-      image = '/assets/images/vw-kombi-corujinha-1970.jpg';
-      description = `Volkswagen Kombi clássica com pintura Saia e Blusa impecável, janelas de abrir e acabamento interno no padrão de fábrica.`;
-    } else if (lowerModel.includes('maverick') || lowerModel.includes('mustang')) {
-      engine = '302 V8 5.0L Quadrijet';
-      transmission = 'Manual 4 Marchas Hurst';
-      color = 'Amarelo Ouro / Faixas Pretas';
-      power = '197 cv';
-      subtitle = `V8 Muscle Car Classic • ${cleanYear}`;
-      image = '/assets/images/aero-willys-1967.jpg';
-      description = `Puro Muscle Car V8 americano/nacional. Torque brutal, ronco grave com escapamento duplo e painel esportivo original.`;
-    } else if (lowerModel.includes('porsche') || lowerModel.includes('911')) {
-      engine = '3.0L Flat-6 Boxer Air-Cooled';
-      transmission = 'Manual 5 Marchas Getrag';
-      color = 'Guards Red / Schwarz Metalic';
-      power = '210 cv';
-      subtitle = `German Pure Engineering • ${cleanYear}`;
-      image = '/assets/images/porsche-911-classic-1973.jpg';
-      description = `Porsche 911 clássico refrigerado a ar com números de chassi e motor correspondentes (Matching Numbers) e rodas Fuchs.`;
-    } else if (lowerModel.includes('golf') || lowerModel.includes('gti')) {
-      engine = '2.0L 8V / 16V Injeção Eletrônica';
-      transmission = 'Manual 5 Marchas Esportiva';
-      color = 'Vermelho Flash / Preto';
-      power = '116 cv';
-      subtitle = `Hot Hatch Youngtimer • ${cleanYear}`;
-      image = '/assets/images/aircooled-box-767.jpg';
-      description = `Ícone dos anos 90. Bancos Recaro originais, teto solar elétrico e suspensão esportiva perfeitamente acertada.`;
-    }
+    const existingShareIds = this.getCustomVehicles().map((v) => v.shareId);
+    const spec = SpecGenerator.generate(cleanBrand, cleanModel, cleanYear);
+    const shareId = makeUniqueShareId(spec.shareId, existingShareIds);
 
     return {
-      title: fullTitle,
-      subtitle,
+      title: spec.title,
+      subtitle: spec.subtitle,
       shareId,
-      year: cleanYear,
-      engine,
-      transmission,
-      color,
-      power,
-      condition,
-      description,
-      image,
+      year: spec.year,
+      engine: spec.engine,
+      transmission: spec.transmission,
+      image: spec.image,
+      description: spec.presentation,
+      specs: spec.specs,
+      history: spec.history,
+      curiosities: spec.curiosities,
+      presentationText: spec.presentation,
+      variationsNote: spec.variationsNote,
     };
   },
 };

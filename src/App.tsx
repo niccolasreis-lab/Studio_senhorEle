@@ -5,22 +5,19 @@ import Hero from './components/Hero';
 import About from './components/About';
 import Collection from './components/Collection';
 import Footer from './components/Footer';
-import InquireModal from './components/InquireModal';
 import VehicleDetailModal, { VEHICLE_DETAILS } from './components/VehicleDetailModal';
 import CustomCursor from './components/CustomCursor';
 import FloatingContactWidget from './components/FloatingContactWidget';
 import AdminModal from './components/AdminModal';
 
 export default function App() {
-  const [isInquireOpen, setIsInquireOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [selectedCar, setSelectedCar] = useState<string | undefined>(undefined);
   const [selectedVehicleDetail, setSelectedVehicleDetail] = useState<string | null>(null);
   const [isFilmGrainEnabled, setIsFilmGrainEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('studio_film_grain');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const hasOpenModal = isInquireOpen || isAdminOpen || selectedVehicleDetail !== null;
+  const hasOpenModal = isAdminOpen || selectedVehicleDetail !== null;
 
   const handleToggleFilmGrain = () => {
     setIsFilmGrainEnabled((prev) => {
@@ -52,15 +49,6 @@ export default function App() {
     }
   }, []);
 
-  const handleOpenInquire = (carName?: string) => {
-    setSelectedCar(carName);
-    setIsInquireOpen(true);
-  };
-
-  const handleCloseInquire = () => {
-    setIsInquireOpen(false);
-  };
-
   return (
     <LanguageProvider>
       <div className="relative">
@@ -72,28 +60,20 @@ export default function App() {
           {isFilmGrainEnabled && (
             <div className="fixed inset-0 vintage-overlay z-50 pointer-events-none transition-opacity duration-500"></div>
           )}
-          <Navigation onOpenInquire={() => handleOpenInquire()} />
+          <Navigation />
           <main>
             <Hero />
             <About />
             <Collection
-              onSelectCarForInquiry={(carName) => handleOpenInquire(carName)}
               onOpenDetail={(vehicleId) => setSelectedVehicleDetail(vehicleId)}
             />
           </main>
           <Footer 
-            onOpenInquire={() => handleOpenInquire()} 
             isFilmGrainEnabled={isFilmGrainEnabled}
             onToggleFilmGrain={handleToggleFilmGrain}
           />
-          <FloatingContactWidget onOpenInquire={() => handleOpenInquire()} />
+          <FloatingContactWidget />
         </div>
-        
-        <InquireModal 
-          isOpen={isInquireOpen} 
-          onClose={handleCloseInquire} 
-          selectedCar={selectedCar} 
-        />
 
         <AdminModal
           isOpen={isAdminOpen}
@@ -106,7 +86,6 @@ export default function App() {
         <VehicleDetailModal
           vehicleId={selectedVehicleDetail}
           onClose={() => setSelectedVehicleDetail(null)}
-          onInquire={(carTitle) => handleOpenInquire(carTitle)}
         />
       </div>
     </LanguageProvider>

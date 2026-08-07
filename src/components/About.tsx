@@ -89,11 +89,12 @@ export default function About() {
             </motion.div>
             
             <motion.div 
+              id="purpose"
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="relative pl-8 border-l border-surface-variant"
+              className="relative pl-8 border-l border-surface-variant scroll-mt-32"
             >
               <div className="absolute -left-[18px] top-0 bg-surface-container-high rounded-full border border-secondary/30 p-1 flex items-center justify-center">
                 <span className="material-symbols-outlined text-secondary text-[20px]" style={{ fontVariationSettings: '"FILL" 1' }}>verified</span>
