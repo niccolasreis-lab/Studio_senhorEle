@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
@@ -36,7 +36,12 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       brand: 'Volkswagen',
       models: [
         'Fusca', 'Fusca 1300', 'Fusca 1500', 'Fusca 1600',
-        'Kombi', 'Kombi Corujinha', 'Brasília', 'Gol', 'Voyage',
+        'Fusca Brezel', 'Fusca Zwitter', 'Fusca Oval', 'Fusca Cabriolet',
+        'Fusca Trocar', 'Fusca Cristalino', 'Fusca Itamar', 'Beetle 1303',
+        'Kombi', 'Kombi Corujinha', 'Kombi Furgão', 'Kombi Alemã CD',
+        'Kombi Alemã ST', 'Kombi Carat', 'Kombi Standard', 'Kombi Pickup',
+        'Kombi Ambulância', 'Kombi Prata', 'Kombi 05/50', 'Kombi Série LE',
+        'Karmann Ghia', 'Brasília', 'Gol', 'Voyage',
       ],
     },
     {
@@ -51,7 +56,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     },
     {
       brand: 'Porsche',
-      models: ['911', '911 Carrera', '911 Turbo', '912', '914', '356'],
+      models: ['911', '911 Carrera', '911 Turbo', '912', '914', '356', '987 Boxster', 'Envemo Super 90'],
     },
     {
       brand: 'Aero Willys',
@@ -78,6 +83,15 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setExpressModel(models[0] || '');
   };
 
+  // Prévia ao vivo do Cadastro Rápido: mostra a descrição exata conforme Marca+Modelo+Ano.
+  const previewSpec = useMemo(() => {
+    try {
+      return CustomVehicleService.generateSmartVehicleSpecs(expressBrand, expressModel, expressYear);
+    } catch {
+      return null;
+    }
+  }, [expressBrand, expressModel, expressYear]);
+
   // Cloud Image state (3 image slots)
   const IMAGE_SLOTS = 3;
   const IMAGE_LABELS = ['Imagem 1', 'Imagem 2', 'Imagem 3'];
@@ -99,9 +113,16 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [successMsg, setSuccessMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Histórico/curiosidades gerados pelo Cadastro Rápido (persistidos junto ao veículo)
+  const [generatedHistory, setGeneratedHistory] = useState<string[]>([]);
+  const [generatedCuriosities, setGeneratedCuriosities] = useState<string[]>([]);
 
   // Custom & Base vehicles list
   const [allVehicles, setAllVehicles] = useState<CustomVehicle[]>([]);
+
+  // Estado do reordenamento por arrastar (drag and drop)
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const refreshVehiclesList = () => {
     setAllVehicles(CustomVehicleService.getCustomVehicles());
@@ -112,6 +133,40 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       refreshVehiclesList();
     }
   }, [isAuthenticated, isOpen]);
+
+  const handleDragStart = (v: CustomVehicle) => () => {
+    setDraggingId(v.id);
+  };
+
+  const handleDragOver = (index: number) => (e: React.DragEvent) => {
+    if (!draggingId) return;
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (targetIndex: number) => () => {
+    if (!draggingId) return;
+    playMechanicalClick('click');
+    const fromIndex = allVehicles.findIndex((v) => v.id === draggingId);
+    if (fromIndex === -1 || fromIndex === targetIndex) {
+      finishDrag();
+      return;
+    }
+
+    const next = [...allVehicles];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(targetIndex, 0, moved);
+
+    CustomVehicleService.reorderVehicles(next);
+    setAllVehicles(next);
+    finishDrag();
+    if (onVehicleAdded) onVehicleAdded();
+  };
+
+  const finishDrag = () => {
+    setDraggingId(null);
+    setDragOverIndex(null);
+  };
 
   // Handle local image file upload & preview for a given slot
   const handleImageChange = (slot: number) => (e: ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +226,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
     setCloudErrors(Array(IMAGE_SLOTS).fill(''));
     setSaveError('');
+    setGeneratedHistory([]);
+    setGeneratedCuriosities([]);
     setSaving(false);
   };
 
@@ -192,6 +249,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setImagePreviews(imgs);
     setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
     setCloudErrors(Array(IMAGE_SLOTS).fill(''));
+    setGeneratedHistory(v.history || []);
+    setGeneratedCuriosities(v.curiosities || []);
     setActiveTab('form');
   };
 
@@ -208,6 +267,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setDescription(spec.presentationText || spec.description || '');
     setImageSlots([spec.image, '', '']);
     setImagePreviews([spec.image, '', '']);
+    setGeneratedHistory(spec.history || []);
+    setGeneratedCuriosities(spec.curiosities || []);
     setActiveTab('form');
     setSuccessMsg(`Ficha técnica de "${spec.title}" preenchida automaticamente!`);
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -261,6 +322,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
+          history: generatedHistory.length ? generatedHistory : undefined,
+          curiosities: generatedCuriosities.length ? generatedCuriosities : undefined,
         });
         setSuccessMsg(`Veículo "${title.trim()}" atualizado com sucesso!`);
       } else {
@@ -277,6 +340,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
+          history: generatedHistory.length ? generatedHistory : undefined,
+          curiosities: generatedCuriosities.length ? generatedCuriosities : undefined,
         });
         setSuccessMsg(`Veículo "${title.trim()}" cadastrado no acervo!`);
       }
@@ -347,7 +412,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
               </div>
               <div>
                 <h3 className="font-headline-md text-lg text-parchment font-bold">
-                  {isAuthenticated ? 'Painel do Curador — Studio SenhorEle' : 'Acesso Interno / Login'}
+                  {isAuthenticated ? 'Painel Administrativo do Studio Senhorele' : 'Acesso Interno / Login'}
                 </h3>
                 <p className="font-label-caps text-[11px] text-secondary">
                   {isAuthenticated ? 'Personalizar, Editar e Gerenciar o Acervo Completo' : 'Área Restrita do Sistema'}
@@ -544,6 +609,35 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       <span>Gerar Ficha do Veículo</span>
                     </button>
 
+                    {previewSpec && previewSpec.description && (
+                      <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl space-y-2">
+                        <div className="flex items-center space-x-2 text-emerald-300">
+                          <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
+                          <span className="font-label-caps text-[11px] font-bold">
+                            {previewSpec.hasIndividualData
+                              ? `Veículo do acervo correspondente: ${previewSpec.title}`
+                              : 'Prévia da ficha gerada'}
+                          </span>
+                        </div>
+                        {previewSpec.hasIndividualData && previewSpec.history.length > 0 && (
+                          <p className="text-[11px] text-on-surface-variant font-label-caps">
+                            História incluída junto à ficha: “{previewSpec.history[0].slice(0, 120)}
+                            {previewSpec.history[0].length > 120 ? '…' : ''}”
+                          </p>
+                        )}
+                        <p className="text-xs text-parchment/90 leading-relaxed">{previewSpec.description}</p>
+                        {previewSpec.hasIndividualData && (
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateSmartSpec(expressBrand, expressModel, expressYear)}
+                            className="text-[11px] font-label-caps text-emerald-300 underline cursor-pointer"
+                          >
+                            Aplicar no formulário abaixo →
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {/* Presets de Exemplo 1-Clique */}
                     <div className="pt-2">
                       <span className="block font-label-caps text-[11px] text-on-surface-variant mb-2">
@@ -579,27 +673,79 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                         <button
                           type="button"
                           onClick={() => {
-                            setExpressBrand('VW');
-                            setExpressModel('Gol GTI 2.0');
-                            setExpressYear('1993');
-                            handleGenerateSmartSpec('VW', 'Gol GTI 2.0', '1993');
+                            setExpressBrand('Volkswagen');
+                            setExpressModel('Fusca Brezel');
+                            setExpressYear('1950');
+                            handleGenerateSmartSpec('Volkswagen', 'Fusca Brezel', '1950');
                           }}
                           className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
                         >
-                          ⚡ VW Gol GTI 1993
+                          ⚡ Fusca Brezel 1950
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpressBrand('Volkswagen');
+                            setExpressModel('Kombi Carat');
+                            setExpressYear('1997');
+                            handleGenerateSmartSpec('Volkswagen', 'Kombi Carat', '1997');
+                          }}
+                          className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
+                        >
+                          ⚡ Kombi Carat 1997
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpressBrand('Volkswagen');
+                            setExpressModel('Kombi 05/50');
+                            setExpressYear('2007');
+                            handleGenerateSmartSpec('Volkswagen', 'Kombi 05/50', '2007');
+                          }}
+                          className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
+                        >
+                          ⚡ Kombi 05/50 2007
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpressBrand('Volkswagen');
+                            setExpressModel('Kombi Série LE');
+                            setExpressYear('2013');
+                            handleGenerateSmartSpec('Volkswagen', 'Kombi Série LE', '2013');
+                          }}
+                          className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
+                        >
+                          ⚡ Kombi Série LE 2013
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpressBrand('Volkswagen');
+                            setExpressModel('Fusca Itamar');
+                            setExpressYear('1993');
+                            handleGenerateSmartSpec('Volkswagen', 'Fusca Itamar', '1993');
+                          }}
+                          className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
+                        >
+                          ⚡ Fusca Itamar 1993
                         </button>
 
                         <button
                           type="button"
                           onClick={() => {
                             setExpressBrand('Porsche');
-                            setExpressModel('911 Turbo 3.3');
-                            setExpressYear('1985');
-                            handleGenerateSmartSpec('Porsche', '911 Turbo 3.3', '1985');
+                            setExpressModel('Envemo Super 90');
+                            setExpressYear('1980');
+                            handleGenerateSmartSpec('Porsche', 'Envemo Super 90', '1980');
                           }}
                           className="px-3 py-1 bg-surface-container hover:bg-surface-variant/40 border border-surface-variant/40 rounded-lg text-amber-200 font-label-caps text-[10px] cursor-pointer"
                         >
-                          ⚡ Porsche 911 Turbo 1985
+                          ⚡ Envemo Super 90 1980
                         </button>
                       </div>
                     </div>
@@ -778,7 +924,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                         <span className="material-symbols-outlined text-[18px]">
                           {editingVehicleId ? 'save' : 'add_circle'}
                         </span>
-                        <span>{editingVehicleId ? 'Salvar Alterações no Veículo' : 'Adicionar ao Acervo'}</span>
+                        <span>{editingVehicleId ? 'Salvar Alterações no Veículo' : 'Salvar Post'}</span>
                       </button>
 
                       {editingVehicleId && (
@@ -801,53 +947,94 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       Gerenciar Veículos do Acervo Completo ({allVehicles.length})
                     </h4>
                     <span className="text-[11px] text-on-surface-variant font-mono">
-                      Edite ou exclua qualquer modelo
+                      Edite, exclua ou arraste na fila
                     </span>
                   </div>
 
+                  <div className="rounded-xl border border-surface-variant/30 bg-surface-container/40 px-3 py-2.5 flex items-start space-x-2">
+                    <span className="material-symbols-outlined text-[16px] text-secondary mt-0.5">swap_vert</span>
+                    <p className="text-[11px] leading-snug text-on-surface-variant">
+                      <span className="text-secondary font-bold font-label-caps">Regra da sequência:</span>{' '}
+                      a posição <span className="font-mono text-amber-300">1</span> é o veículo em destaque.
+                      Clique, segure e arraste um anúncio para cima ou para baixo na fila para definir
+                      qual posto cada veículo ocupa no acervo.
+                    </p>
+                  </div>
+
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {allVehicles.map((v) => (
-                      <div
-                        key={v.id}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                          editingVehicleId === v.id
-                            ? 'bg-amber-950/40 border-amber-400/80 shadow-md'
-                            : 'bg-surface-container/60 border-surface-variant/30 hover:border-surface-variant/60'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3 overflow-hidden">
-                          <img src={v.image} alt={v.title} className="w-12 h-12 object-cover rounded-lg shrink-0 border border-surface-variant/40" />
-                          <div className="truncate">
-                            <div className="font-headline-md text-xs text-parchment font-bold truncate">
-                              {v.title}
+                    {allVehicles.map((v, index) => {
+                      const isDragging = draggingId === v.id;
+                      const isDropTarget = dragOverIndex === index && !isDragging;
+                      return (
+                        <div
+                          key={v.id}
+                          draggable
+                          onDragStart={handleDragStart(v)}
+                          onDragOver={handleDragOver(index)}
+                          onDrop={handleDrop(index)}
+                          onDragEnd={finishDrag}
+className={`flex items-center justify-between p-3 rounded-xl border transition-all select-none cursor-grab active:cursor-grabbing ${
+                            isDragging
+                              ? 'opacity-40 border-secondary/70 shadow-lg shadow-black/50 rotate-1'
+                              : isDropTarget
+                              ? 'border-secondary bg-secondary/5 ring-1 ring-secondary/40'
+                              : editingVehicleId === v.id
+                              ? 'bg-amber-950/40 border-amber-400/80 shadow-md'
+                              : 'bg-surface-container/60 border-surface-variant/30 hover:border-surface-variant/60'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 overflow-hidden">
+                            {/* Alça de arrastar + número da posição */}
+                            <div className="flex flex-col items-center shrink-0 -ml-1 touch-none">
+                              <span className="material-symbols-outlined text-[16px] text-secondary" aria-hidden>
+                                drag_indicator
+                              </span>
+                              <span
+                                className={`font-mono text-[9px] leading-none py-0.5 ${
+                                  index === 0 ? 'text-amber-300 font-bold' : 'text-on-surface-variant'
+                                }`}
+                                title={`Posição atual na fila do acervo (${index + 1} de ${allVehicles.length})`}
+                              >
+                                #{index + 1}
+                              </span>
                             </div>
-                            <div className="font-mono text-[10px] text-secondary truncate">
-                              #{v.shareId} • {v.year}
+
+                            <img src={v.image} alt={v.title} className="w-12 h-12 object-cover rounded-lg shrink-0 border border-surface-variant/40 pointer-events-none" />
+                            <div className="truncate">
+                              <div className="font-headline-md text-xs text-parchment font-bold truncate">
+                                {v.title}
+                              </div>
+                              <div className="font-mono text-[10px] text-secondary truncate">
+                                #{v.shareId} • {v.year}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 shrink-0 pointer-events-none">
+                            <div className="pointer-events-auto">
+                              <button
+                                onClick={() => handleStartEditing(v)}
+                                className="p-1.5 text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 font-label-caps text-[11px]"
+                                title="Editar este veículo"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                                <span className="hidden sm:inline">Editar</span>
+                              </button>
+                            </div>
+                            <div className="pointer-events-auto">
+                              <button
+                                onClick={() => handleDeleteVehicle(v.id, v.title)}
+                                className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 font-label-caps text-[11px]"
+                                title="Excluir este veículo"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                <span className="hidden sm:inline">Excluir</span>
+                              </button>
                             </div>
                           </div>
                         </div>
-
-                        <div className="flex items-center space-x-2 shrink-0">
-                          <button
-                            onClick={() => handleStartEditing(v)}
-                            className="p-1.5 text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 font-label-caps text-[11px]"
-                            title="Editar este veículo"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
-                            <span className="hidden sm:inline">Editar</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteVehicle(v.id, v.title)}
-                            className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 font-label-caps text-[11px]"
-                            title="Excluir este veículo"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                            <span className="hidden sm:inline">Excluir</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

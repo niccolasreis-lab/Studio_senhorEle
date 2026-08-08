@@ -11,7 +11,12 @@
  *  4. Havendo múltiplas versões no mesmo ano, usa apenas dados comuns e
  *     sinaliza a existência de variações.
  *  5. Share ID único no formato SRL-[MODELO]-[ANO].
+ *  6. Se existe um veículo específico do acervo (coleção curada) para o par
+ *     modelo + ano, a descrição e a história exatas são usadas no lugar dos
+ *     textos genéricos.
  */
+
+import { CURATED_COLLECTION, CollectionCuratedEntry } from '../data/collectionVehicles';
 
 export interface VehiclePhase {
   from: number;
@@ -321,12 +326,90 @@ export function makeUniqueShareId(base: string, existing: string[]): string {
   return `${base}-${i.toString().padStart(2, '0')}`;
 }
 
+/** Busca o veículo do acervo curado que corresponde a modelo + ano. */
+function matchCurated(modelKey: string, yearNum: number): CollectionCuratedEntry | undefined {
+  const exact = CURATED_COLLECTION.find(
+    (c) => c.years.includes(yearNum) && c.exactNames.some((n) => normalizeKey(n) === modelKey)
+  );
+  if (exact) return exact;
+
+  return CURATED_COLLECTION.find(
+    (c) => c.years.includes(yearNum) && c.modelKeys.some((k) => modelKey.includes(normalizeKey(k)))
+  );
+}
+
+/** Constrói a ficha de um veículo específico do acervo (história/descrição exatas). */
+function buildCuratedSpec(
+  c: CollectionCuratedEntry,
+  modelKey: string,
+  brandKey: string,
+  yearStr: string,
+  yearNum: number,
+  hasYear: boolean
+): GeneratedVehicleSpec {
+  const shareId = baseShareId(c.title, yearStr);
+  const image = c.image || brandImage(brandKey);
+
+  // Dados mecânicos de fase quando o modelo tem entrada na base (Fusca/Kombi).
+  const entry = MODELS.find((m) => m.matchKeys.some((k) => modelKey.includes(k)));
+  const phase = entry && hasYear ? pickPhase(entry, yearNum) : undefined;
+
+  const engine = c.engine || phase?.engineShort || phase?.engine || '';
+  const transmission = c.transmission || phase?.transmissionShort || 'Manual';
+
+  const specs: { label: string; value: string }[] = [];
+  const push = (label: string, value?: string) => {
+    if (value) specs.push({ label, value });
+  };
+  push('Motor', engine);
+  push('Cilindrada', phase?.displacement);
+  push('Potência', phase?.power);
+  push('Torque', phase?.torque);
+  push('Combustível', phase?.fuel);
+  push('Refrigeração', phase?.cooling);
+  push('Alimentação', phase?.intake);
+  push('Tração', phase?.drive);
+  push('Peso', phase?.weight);
+  push('Transmissão', c.transmission || phase?.transmission);
+
+  return {
+    id: normalizeKey(shareId),
+    shareId,
+    title: c.title,
+    subtitle: `${c.brand} • Clássico de coleção${hasYear ? ` • ${yearNum}` : ''}`,
+    year: yearStr || '',
+    image,
+    engine,
+    transmission,
+    power: phase?.power,
+    torque: phase?.torque,
+    displacement: phase?.displacement,
+    fuel: phase?.fuel,
+    cooling: phase?.cooling,
+    intake: phase?.intake,
+    drive: phase?.drive,
+    weight: phase?.weight,
+    variationsNote: phase?.variationsNote,
+    presentation: c.description,
+    specs,
+    characteristics: phase?.characteristics || [],
+    history: c.history,
+    curiosities: [],
+    hasIndividualData: true,
+  };
+}
+
 export const SpecGenerator = {
   generate(brand: string, model: string, yearStr: string): GeneratedVehicleSpec {
     const brandKey = normalizeKey(brand);
     const modelKey = normalizeKey(model);
     const yearNum = parseInt(yearStr, 10);
     const hasYear = Number.isFinite(yearNum);
+
+    const curated = hasYear ? matchCurated(modelKey, yearNum) : undefined;
+    if (curated) {
+      return buildCuratedSpec(curated, modelKey, brandKey, yearStr, yearNum, hasYear);
+    }
 
     const entry =
       MODELS.find((m) =>

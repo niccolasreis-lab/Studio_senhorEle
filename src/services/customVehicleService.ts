@@ -129,6 +129,9 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
 
 const STORAGE_KEY = 'studio_custom_vehicles';
 const DELETED_IDS_KEY = 'studio_deleted_vehicle_ids';
+// Ordem de exibição definida pelo admin (array de ids). Persistida à parte para
+// sobreviver à "sync" com o Supabase (que apenas recria o merge base + custom).
+const ORDER_KEY = 'studio_custom_vehicle_order';
 
 export const CustomVehicleService = {
   getDeletedIds(): string[] {
@@ -140,13 +143,26 @@ export const CustomVehicleService = {
     }
   },
 
+  getOrderedIds(): string[] {
+    try {
+      const data = localStorage.getItem(ORDER_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  persistOrder(ids: string[]): void {
+    localStorage.setItem(ORDER_KEY, JSON.stringify(ids));
+  },
+
   getCustomVehicles(): CustomVehicle[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       const customList: CustomVehicle[] = data ? JSON.parse(data) : [];
       const deletedIds = this.getDeletedIds();
 
-      // Merge base default collection with custom list (custom entries override base defaults)
+      // Merge base vehicle collection with custom list (custom entries override base defaults)
       const map = new Map<string, CustomVehicle>();
       
       INITIAL_DEFAULT_VEHICLES.forEach((v) => {
@@ -161,10 +177,41 @@ export const CustomVehicleService = {
         }
       });
 
-      return Array.from(map.values());
+      const merged = Array.from(map.values());
+      const order = this.getOrderedIds();
+
+      // Aplica a curadoria de ordem feita no admin. Veículos novos (sem posição
+      // salva) entram no fim da fila; se não houver ordem salva, mantém a padrão.
+      if (order.length > 0) {
+        const byId = new Map(merged.map((v) => [v.id, v]));
+        const ordered: CustomVehicle[] = [];
+        order.forEach((id) => {
+          const vehicle = byId.get(id);
+          if (vehicle) {
+            ordered.push(vehicle);
+            byId.delete(id);
+          }
+        });
+        byId.forEach((v) => ordered.push(v));
+        return ordered;
+      }
+
+      return merged;
     } catch {
       return INITIAL_DEFAULT_VEHICLES;
     }
+  },
+
+  /** Persiste a nova sequência (ordem de exibição) definida por arrastar. */
+  reorderVehicles(ordered: CustomVehicle[]): CustomVehicle[] {
+    this.persistOrder(ordered.map((v) => v.id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ordered));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated', { detail: { reordered: true } }));
+    }
+
+    return ordered;
   },
 
   async syncWithSupabase(): Promise<CustomVehicle[]> {
