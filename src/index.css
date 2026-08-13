@@ -150,6 +150,21 @@ html {
   @apply bg-amber-glow/30 text-amber-glow;
 }
 
+.admin-page {
+  caret-color: var(--color-secondary);
+  scrollbar-color: var(--color-outline-variant) var(--color-background);
+  scrollbar-width: thin;
+}
+
+.admin-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.admin-page ::placeholder {
+  color: color-mix(in srgb, var(--color-on-surface-variant) 78%, transparent);
+}
+
 .vintage-overlay {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   pointer-events: none;

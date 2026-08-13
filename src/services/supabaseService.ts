@@ -78,6 +78,7 @@ export const SupabaseService = {
         power: item.power,
         condition: item.condition,
         description: item.description,
+        status: item.status || 'published',
         isCustom: true,
       }));
     } catch (err) {
@@ -91,7 +92,7 @@ export const SupabaseService = {
       const client = getSupabaseClient();
       if (!client) return false;
 
-      const { error } = await client.from('custom_vehicles').insert([
+      const { error } = await client.from('custom_vehicles').upsert([
         {
           id: vehicle.id,
           share_id: vehicle.shareId,
@@ -107,8 +108,9 @@ export const SupabaseService = {
           power: vehicle.power || '',
           condition: vehicle.condition || '',
           description: vehicle.description || '',
+          status: vehicle.status || 'draft',
         },
-      ]);
+      ], { onConflict: 'id' });
 
       if (error) {
         console.warn('Supabase insert error:', error.message);

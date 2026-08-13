@@ -4,7 +4,7 @@ import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Translations } from '../i18n/translations';
 import { use3DTilt } from '../hooks/use3DTilt';
-import { CustomVehicleService } from '../services/customVehicleService';
+import { CustomVehicleService, VehicleStatus } from '../services/customVehicleService';
 import { buildWhatsAppLink } from '../config/contact';
 
 interface CarItem {
@@ -17,60 +17,8 @@ interface CarItem {
   engine?: string;
   transmission?: string;
   description?: string;
+  status: VehicleStatus;
 }
-
-const COLLECTION_ITEMS: CarItem[] = [
-  {
-    id: 'porsche-911',
-    shareId: 'SRL-911-1973',
-    title: 'Porsche 911 Classic',
-    subtitle: 'Matching Numbers • 1973',
-    year: '1973',
-    engine: '2.4L Flat-6 Boxer',
-    transmission: 'Manual 5 Marchas',
-    image: '/assets/images/porsche-911-classic-1973.jpg',
-  },
-  {
-    id: 'vw-kombi',
-    shareId: 'SRL-KMB-1970',
-    title: 'VW Kombi Corujinha',
-    subtitle: 'Restored Heritage • 1970',
-    year: '1970',
-    engine: '1500cc Air-Cooled',
-    transmission: 'Manual 4 Marchas',
-    image: '/assets/images/vw-kombi-corujinha-1970.jpg',
-  },
-  {
-    id: 'vw-fusca-cal',
-    shareId: 'SRL-FSC-1968',
-    title: 'VW Fusca Cal Style',
-    subtitle: 'Air Cooled Custom • 1968',
-    year: '1968',
-    engine: '1600cc Dupla Carburação',
-    transmission: 'EMPI Rápida 4 Marchas',
-    image: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  },
-  {
-    id: 'aero-willys',
-    shareId: 'SRL-AWL-1967',
-    title: 'Aero Willys',
-    subtitle: 'Original Impecável • 1967',
-    year: '1967',
-    engine: '2600 6 Cilindros em Linha',
-    transmission: 'Manual 4 Marchas Coluna',
-    image: '/assets/images/aero-willys-1967.jpg',
-  },
-  {
-    id: 'aircooled-engine',
-    shareId: 'SRL-BOX-767',
-    title: 'Preparação Air Cooled',
-    subtitle: 'Box 767 Restauração • Custom',
-    year: 'High Performance',
-    engine: 'Boxer Air Cooled Sob Medida',
-    transmission: 'Relação Trabalhada',
-    image: '/assets/images/aircooled-box-767.jpg',
-  },
-];
 
 interface CollectionProps {
   onSelectCarForInquiry?: (carName: string) => void;
@@ -186,6 +134,12 @@ function IntersectionObserverGridCard({
           </div>
         )}
 
+        {item.status === 'reserved' && (
+          <div className="absolute bottom-3 left-3 bg-secondary text-on-secondary px-3 py-1 rounded-full text-[10px] font-label-caps font-bold z-20">
+            Reservado
+          </div>
+        )}
+
         {/* Quick View Overlay Icon */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-background/40 backdrop-blur-[2px] z-20">
           <span className="bg-secondary text-deep-charcoal font-label-caps text-xs px-4 py-2 rounded-full font-bold flex items-center space-x-1.5 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
@@ -280,7 +234,9 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
   ];
 
   const [customVehicles, setCustomVehicles] = useState<CarItem[]>(() =>
-    CustomVehicleService.getCustomVehicles().map((v) => ({
+    CustomVehicleService.getCustomVehicles()
+      .filter((v) => v.status === 'published' || v.status === 'reserved')
+      .map((v) => ({
       id: v.id,
       shareId: v.shareId,
       title: v.title,
@@ -290,11 +246,14 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
       transmission: v.transmission,
       image: v.image,
       description: v.description,
+      status: v.status,
     }))
   );
 
   const refreshCustomVehicles = () => {
-    const fresh = CustomVehicleService.getCustomVehicles().map((v) => ({
+    const fresh = CustomVehicleService.getCustomVehicles()
+      .filter((v) => v.status === 'published' || v.status === 'reserved')
+      .map((v) => ({
       id: v.id,
       shareId: v.shareId,
       title: v.title,
@@ -304,6 +263,7 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
       transmission: v.transmission,
       image: v.image,
       description: v.description,
+      status: v.status,
     }));
     setCustomVehicles(fresh);
   };
@@ -324,7 +284,9 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
     };
   }, []);
 
-  const allItems = [...customVehicles, ...COLLECTION_ITEMS];
+  // A lista do serviço já inclui os veículos base. Usar uma segunda coleção
+  // aqui duplicaria os clássicos e impediria que o status os ocultasse.
+  const allItems = customVehicles;
 
   const filteredItems = allItems.filter((item) => {
     const query = searchQuery.toLowerCase().trim();
@@ -659,6 +621,11 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
                     <div className="absolute top-3 left-3 bg-background/80 backdrop-blur-md border border-secondary/40 px-2.5 py-1 rounded-full text-secondary font-label-caps text-[10px] tracking-wider shadow-md z-20">
                       #{item.shareId}
                     </div>
+                    {item.status === 'reserved' && (
+                      <div className="absolute top-3 right-3 bg-secondary text-on-secondary px-3 py-1 rounded-full text-[10px] font-label-caps font-bold z-20">
+                        Reservado
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1 p-6 flex flex-col justify-between bg-surface-container-high">

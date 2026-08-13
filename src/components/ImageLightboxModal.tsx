@@ -40,11 +40,7 @@ export default function ImageLightboxModal({
   }, [isOpen, initialIndex]);
 
   // Handle accessible modal behavior
-  const modalRef = useAccessibleModal({
-    isOpen,
-    onClose,
-    autoFocusRef: undefined,
-  });
+  const modalRef = useAccessibleModal<HTMLDivElement>(isOpen, onClose);
 
   // Track mouse for ambient spotlight effect
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {

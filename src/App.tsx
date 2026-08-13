@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
 import Collection from './components/Collection';
 import Footer from './components/Footer';
-import VehicleDetailModal, { VEHICLE_DETAILS } from './components/VehicleDetailModal';
 import CustomCursor from './components/CustomCursor';
 import FloatingContactWidget from './components/FloatingContactWidget';
-import AdminModal from './components/AdminModal';
+
+const AdminModal = lazy(() => import('./components/AdminModal'));
+const VehicleDetailModal = lazy(() => import('./components/VehicleDetailModal'));
+
+function SurfaceFallback() {
+  return <div role="status" className="fixed inset-0 z-50 grid place-items-center bg-background/90 text-secondary font-label-caps text-xs">Carregando…</div>;
+}
 
 export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -18,6 +23,7 @@ export default function App() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const hasOpenModal = isAdminOpen || selectedVehicleDetail !== null;
+  const isAdminPage = window.location.pathname.replace(/\/$/, '') === '/admin';
 
   const handleToggleFilmGrain = () => {
     setIsFilmGrainEnabled((prev) => {
@@ -30,24 +36,39 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === 'true' || params.get('admin') === '1') {
+      window.history.replaceState({}, '', '/admin');
+      window.dispatchEvent(new PopStateEvent('popstate'));
       setIsAdminOpen(true);
     }
 
     const vehicleParam = params.get('v') || params.get('vehicle') || params.get('shareId');
     if (vehicleParam) {
       const cleanParam = vehicleParam.toLowerCase().trim();
-      const match = Object.entries(VEHICLE_DETAILS).find(
-        ([id, details]) =>
-          id.toLowerCase() === cleanParam ||
-          details.shareId.toLowerCase() === cleanParam ||
-          details.shareId.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.replace(/[^a-z0-9]/g, '')
-      );
-
-      if (match) {
-        setSelectedVehicleDetail(match[0]);
-      }
+      import('./components/VehicleDetailModal').then(({ VEHICLE_DETAILS }) => {
+        const match = Object.entries(VEHICLE_DETAILS).find(
+          ([id, details]) =>
+            id.toLowerCase() === cleanParam ||
+            details.shareId.toLowerCase() === cleanParam ||
+            details.shareId.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.replace(/[^a-z0-9]/g, '')
+        );
+        if (match) setSelectedVehicleDetail(match[0]);
+      });
     }
   }, []);
+
+  if (isAdminPage || isAdminOpen) {
+    return (
+      <LanguageProvider>
+        <Suspense fallback={<SurfaceFallback />}>
+          <AdminModal
+            isOpen
+            onClose={() => { window.location.href = '/'; }}
+            onVehicleAdded={() => window.dispatchEvent(new Event('storage'))}
+          />
+        </Suspense>
+      </LanguageProvider>
+    );
+  }
 
   return (
     <LanguageProvider>
@@ -75,18 +96,18 @@ export default function App() {
           <FloatingContactWidget />
         </div>
 
-        <AdminModal
-          isOpen={isAdminOpen}
-          onClose={() => setIsAdminOpen(false)}
-          onVehicleAdded={() => {
-            window.dispatchEvent(new Event('storage'));
-          }}
-        />
+        <Suspense fallback={hasOpenModal ? <SurfaceFallback /> : null}>
+          {isAdminOpen && <AdminModal
+            isOpen
+            onClose={() => setIsAdminOpen(false)}
+            onVehicleAdded={() => window.dispatchEvent(new Event('storage'))}
+          />}
 
-        <VehicleDetailModal
-          vehicleId={selectedVehicleDetail}
-          onClose={() => setSelectedVehicleDetail(null)}
-        />
+          {selectedVehicleDetail && <VehicleDetailModal
+            vehicleId={selectedVehicleDetail}
+            onClose={() => setSelectedVehicleDetail(null)}
+          />}
+        </Suspense>
       </div>
     </LanguageProvider>
   );

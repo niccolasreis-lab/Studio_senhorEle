@@ -17,6 +17,7 @@ export interface CustomVehicle {
   condition?: string;
   description?: string;
   isCustom?: boolean;
+  status: VehicleStatus;
   // Campos gerados automaticamente pela ficha (especificações, história etc.).
   // Só são preenchidos quando há informação confiável; ausência = ocultar na UI.
   specs?: { label: string; value: string }[];
@@ -26,9 +27,15 @@ export interface CustomVehicle {
   variationsNote?: string;
 }
 
+export type VehicleStatus = 'draft' | 'published' | 'reserved' | 'sold';
+
+export const normalizeVehicleStatus = (status?: string): VehicleStatus =>
+  status === 'draft' || status === 'reserved' || status === 'sold' ? status : 'published';
+
 export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   {
     id: 'porsche-911',
+    status: 'published',
     shareId: 'SRL-911-1973',
     title: 'Porsche 911 Classic',
     subtitle: 'Matching Numbers • 1973',
@@ -43,6 +50,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'vw-kombi',
+    status: 'published',
     shareId: 'SRL-KMB-1970',
     title: 'VW Kombi Corujinha',
     subtitle: 'Restored Heritage • 1970',
@@ -57,6 +65,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'vw-fusca-cal',
+    status: 'published',
     shareId: 'SRL-FSC-1968',
     title: 'VW Fusca Cal Style',
     subtitle: 'Air Cooled Custom • 1968',
@@ -71,6 +80,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'aero-willys',
+    status: 'published',
     shareId: 'SRL-AWL-1967',
     title: 'Aero Willys',
     subtitle: 'Original Impecável • 1967',
@@ -85,6 +95,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'aircooled-box-767',
+    status: 'published',
     shareId: 'SRL-BOX-1976',
     title: 'Air Cooled Box 767',
     subtitle: 'German Vintage Engineering • 1976',
@@ -99,6 +110,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'vw-fusca-1994',
+    status: 'published',
     shareId: 'SRL-FSC-1994',
     title: 'VW Fusca Itamar',
     subtitle: 'Edição Especial de Coleção • 1994',
@@ -113,6 +125,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   },
   {
     id: 'porsche-911-carrera-1989',
+    status: 'published',
     shareId: 'SRL-911-1989',
     title: 'Porsche 911 Carrera 3.2',
     subtitle: 'G50 Gearbox Classic • 1989',
@@ -159,7 +172,9 @@ export const CustomVehicleService = {
   getCustomVehicles(): CustomVehicle[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      const customList: CustomVehicle[] = data ? JSON.parse(data) : [];
+      const customList: CustomVehicle[] = data
+        ? JSON.parse(data).map((vehicle: CustomVehicle) => ({ ...vehicle, status: normalizeVehicleStatus(vehicle.status) }))
+        : [];
       const deletedIds = this.getDeletedIds();
 
       // Merge base vehicle collection with custom list (custom entries override base defaults)
@@ -246,10 +261,11 @@ export const CustomVehicleService = {
       .replace(/^-|-$/g, '');
     
     const uniqueId = `custom-${cleanSlug}-${Date.now()}`;
-    const newVehicle: CustomVehicle = {
-      ...vehicleData,
-      id: uniqueId,
-      isCustom: true,
+      const newVehicle: CustomVehicle = {
+        ...vehicleData,
+        id: uniqueId,
+        isCustom: true,
+        status: vehicleData.status || 'draft',
     };
 
     vehicles.unshift(newVehicle);
@@ -290,7 +306,7 @@ export const CustomVehicleService = {
     return updatedVehicle;
   },
 
-  deleteCustomVehicle(id: string): void {
+  deleteCustomVehicle(id: string, syncCloud = true): void {
     const deletedIds = this.getDeletedIds();
     if (!deletedIds.includes(id)) {
       deletedIds.push(id);
@@ -300,13 +316,30 @@ export const CustomVehicleService = {
     const vehicles = this.getCustomVehicles().filter((v) => v.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
 
-    SupabaseService.deleteVehicle(id).catch((err) =>
-      console.warn('Supabase cloud delete notice:', err)
-    );
+    if (syncCloud) {
+      SupabaseService.deleteVehicle(id).catch((err) =>
+        console.warn('Supabase cloud delete notice:', err)
+      );
+    }
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated', { detail: { deletedId: id } }));
     }
+  },
+
+  restoreVehicle(vehicle: CustomVehicle, index: number): void {
+    const deletedIds = this.getDeletedIds().filter((id) => id !== vehicle.id);
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(deletedIds));
+
+    const vehicles = this.getCustomVehicles().filter((item) => item.id !== vehicle.id);
+    vehicles.splice(Math.max(0, Math.min(index, vehicles.length)), 0, vehicle);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+    this.persistOrder(vehicles.map((item) => item.id));
+
+    SupabaseService.insertVehicle(vehicle).catch((err) =>
+      console.warn('Supabase restore notice:', err)
+    );
+    window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated', { detail: { restoredId: vehicle.id } }));
   },
 
   /**
@@ -326,6 +359,7 @@ export const CustomVehicleService = {
     const shareId = makeUniqueShareId(spec.shareId, existingShareIds);
 
     return {
+      status: 'draft',
       title: spec.title,
       subtitle: spec.subtitle,
       shareId,

@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, ChangeEvent, FormEvent } from 'react';
+import { motion } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
-import { useAccessibleModal } from '../hooks/useAccessibleModal';
-import { CustomVehicleService, CustomVehicle } from '../services/customVehicleService';
+import { CustomVehicleService, CustomVehicle, VehicleStatus } from '../services/customVehicleService';
 import { SupabaseService } from '../services/supabaseService';
+import { useAccessibleModal } from '../hooks/useAccessibleModal';
+
+const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
+  { value: 'draft', label: 'Rascunho' },
+  { value: 'published', label: 'Publicado' },
+  { value: 'reserved', label: 'Reservado' },
+  { value: 'sold', label: 'Vendido' },
+];
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -12,8 +19,6 @@ interface AdminModalProps {
 }
 
 export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminModalProps) {
-  const modalRef = useAccessibleModal(isOpen, onClose);
-  
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('studio_admin_logged') === 'true';
@@ -23,7 +28,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [authError, setAuthError] = useState('');
 
   // Mode & Tabs
-  const [activeTab, setActiveTab] = useState<'form' | 'express'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'express' | 'collection'>('express');
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
   // Express Smart State (pre-seleção de Marca / Modelo / Ano)
@@ -108,9 +113,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [color, setColor] = useState('');
   const [power, setPower] = useState('');
   const [description, setDescription] = useState('');
+  const [vehicleStatus, setVehicleStatus] = useState<VehicleStatus>('draft');
   const [imageSlots, setImageSlots] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
   const [imagePreviews, setImagePreviews] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
   const [successMsg, setSuccessMsg] = useState('');
+  const [savedShareId, setSavedShareId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   // Histórico/curiosidades gerados pelo Cadastro Rápido (persistidos junto ao veículo)
@@ -119,6 +126,14 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
   // Custom & Base vehicles list
   const [allVehicles, setAllVehicles] = useState<CustomVehicle[]>([]);
+  const [collectionSearch, setCollectionSearch] = useState('');
+  const [collectionBrand, setCollectionBrand] = useState('all');
+  const [collectionYear, setCollectionYear] = useState('all');
+  const [collectionStatus, setCollectionStatus] = useState<'all' | VehicleStatus>('all');
+  const [deleteCandidate, setDeleteCandidate] = useState<CustomVehicle | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ vehicle: CustomVehicle; index: number } | null>(null);
+  const deleteTimerRef = useRef<number | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Estado do reordenamento por arrastar (drag and drop)
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -127,6 +142,32 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const refreshVehiclesList = () => {
     setAllVehicles(CustomVehicleService.getCustomVehicles());
   };
+
+  const availableBrands = useMemo(
+    () => Array.from(new Set(allVehicles.map((vehicle) => vehicle.title.split(' ')[0]))).sort(),
+    [allVehicles]
+  );
+
+  const availableYears = useMemo(
+    () => Array.from(new Set<string>(allVehicles.map((vehicle) => vehicle.year))).sort((a, b) => b.localeCompare(a)),
+    [allVehicles]
+  );
+
+  const filteredVehicles = useMemo(() => {
+    const query = collectionSearch.trim().toLocaleLowerCase('pt-BR');
+    return allVehicles.filter((vehicle) => {
+      const brand = vehicle.title.split(' ')[0];
+      const matchesSearch = !query || [vehicle.title, vehicle.subtitle, vehicle.shareId, vehicle.year]
+        .some((value) => value?.toLocaleLowerCase('pt-BR').includes(query));
+      return matchesSearch &&
+        (collectionBrand === 'all' || brand === collectionBrand) &&
+        (collectionYear === 'all' || vehicle.year === collectionYear) &&
+        (collectionStatus === 'all' || vehicle.status === collectionStatus);
+    });
+  }, [allVehicles, collectionBrand, collectionSearch, collectionStatus, collectionYear]);
+
+  const closeDeleteDialog = useCallback(() => setDeleteCandidate(null), []);
+  const deleteDialogRef = useAccessibleModal<HTMLDivElement>(Boolean(deleteCandidate), closeDeleteDialog);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -166,6 +207,18 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const finishDrag = () => {
     setDraggingId(null);
     setDragOverIndex(null);
+  };
+
+  const handleMoveVehicle = (id: string, direction: -1 | 1) => {
+    const currentIndex = allVehicles.findIndex((vehicle) => vehicle.id === id);
+    const targetIndex = currentIndex + direction;
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= allVehicles.length) return;
+    const next = [...allVehicles];
+    [next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]];
+    CustomVehicleService.reorderVehicles(next);
+    setAllVehicles(next);
+    playMechanicalClick('click');
+    onVehicleAdded?.();
   };
 
   // Handle local image file upload & preview for a given slot
@@ -221,6 +274,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setColor('');
     setPower('');
     setDescription('');
+    setVehicleStatus('draft');
     setImageSlots(Array(IMAGE_SLOTS).fill(''));
     setImagePreviews(Array(IMAGE_SLOTS).fill(''));
     setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
@@ -244,6 +298,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setColor(v.color || '');
     setPower(v.power || '');
     setDescription(v.description || '');
+    setVehicleStatus(v.status);
     const imgs = [v.image, v.image2 || '', v.image3 || ''];
     setImageSlots(imgs);
     setImagePreviews(imgs);
@@ -319,6 +374,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           color: color.trim(),
           power: power.trim(),
           description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          status: vehicleStatus,
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
@@ -337,6 +393,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           color: color.trim(),
           power: power.trim(),
           description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          status: vehicleStatus,
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
@@ -345,6 +402,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
         });
         setSuccessMsg(`Veículo "${title.trim()}" cadastrado no acervo!`);
       }
+
+      setSavedShareId(defaultShareId);
 
       refreshVehiclesList();
       if (onVehicleAdded) onVehicleAdded();
@@ -377,45 +436,72 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setCloudErrors(nextErrors);
   };
 
-  const handleDeleteVehicle = (id: string, vehicleTitle: string) => {
-    if (confirm(`Tem certeza que deseja remover "${vehicleTitle}" do acervo?`)) {
-      playMechanicalClick('click');
-      CustomVehicleService.deleteCustomVehicle(id);
-      refreshVehiclesList();
-      if (editingVehicleId === id) resetForm();
-      if (onVehicleAdded) onVehicleAdded();
-    }
+  const handleDeleteVehicle = (vehicle: CustomVehicle, button: HTMLButtonElement) => {
+    deleteButtonRef.current = button;
+    setDeleteCandidate(vehicle);
+  };
+
+  const confirmDeleteVehicle = () => {
+    if (!deleteCandidate) return;
+    if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
+    if (pendingDelete) SupabaseService.deleteVehicle(pendingDelete.vehicle.id);
+
+    const index = allVehicles.findIndex((vehicle) => vehicle.id === deleteCandidate.id);
+    const nextPending = { vehicle: deleteCandidate, index };
+    CustomVehicleService.deleteCustomVehicle(deleteCandidate.id, false);
+    setPendingDelete(nextPending);
+    setDeleteCandidate(null);
+    refreshVehiclesList();
+    if (editingVehicleId === deleteCandidate.id) resetForm();
+    onVehicleAdded?.();
+    playMechanicalClick('click');
+
+    deleteTimerRef.current = window.setTimeout(() => {
+      SupabaseService.deleteVehicle(nextPending.vehicle.id);
+      setPendingDelete(null);
+      deleteTimerRef.current = null;
+    }, 8000);
+  };
+
+  const undoDeleteVehicle = () => {
+    if (!pendingDelete) return;
+    if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
+    CustomVehicleService.restoreVehicle(pendingDelete.vehicle, pendingDelete.index);
+    setPendingDelete(null);
+    deleteTimerRef.current = null;
+    refreshVehiclesList();
+    onVehicleAdded?.();
+    deleteButtonRef.current?.focus();
+  };
+
+  const handleStatusChange = (vehicle: CustomVehicle, status: VehicleStatus) => {
+    CustomVehicleService.updateCustomVehicle(vehicle.id, { status });
+    refreshVehiclesList();
+    onVehicleAdded?.();
   };
 
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/85 backdrop-blur-md overflow-y-auto"
-        aria-modal="true"
-        role="dialog"
-      >
+      <div className="admin-page min-h-screen bg-background text-on-background">
         <motion.div
-          ref={modalRef}
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="relative w-full max-w-3xl bg-surface-container-low border border-secondary/50 rounded-2xl shadow-2xl overflow-hidden my-8"
+          initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="min-h-screen"
         >
           {/* Top Header */}
-          <div className="px-6 py-4 bg-surface-container-high border-b border-surface-variant/40 flex items-center justify-between">
+          <header className="sticky top-0 z-40 px-5 md:px-10 py-4 bg-background/95 border-b border-surface-variant/40 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-secondary/20 border border-secondary text-secondary flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-primary-container text-secondary flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
               </div>
               <div>
-                <h3 className="font-headline-md text-lg text-parchment font-bold">
-                  {isAuthenticated ? 'Painel Administrativo do Studio Senhorele' : 'Acesso Interno / Login'}
-                </h3>
-                <p className="font-label-caps text-[11px] text-secondary">
-                  {isAuthenticated ? 'Personalizar, Editar e Gerenciar o Acervo Completo' : 'Área Restrita do Sistema'}
+                <h1 className="font-headline-md text-lg md:text-xl text-parchment">
+                  {isAuthenticated ? 'Curadoria do acervo' : 'Acesso administrativo'}
+                </h1>
+                <p className="text-[11px] text-on-surface-variant">
+                  Studio SenhorEle
                 </p>
               </div>
             </div>
@@ -425,18 +511,19 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 playMechanicalClick('modal');
                 onClose();
               }}
-              className="p-1.5 rounded-full text-on-surface-variant hover:text-parchment hover:bg-surface-container transition-colors cursor-pointer"
-              aria-label="Fechar"
+              className="min-h-11 px-3 rounded-xl text-on-surface-variant hover:text-parchment hover:bg-surface-container transition-colors cursor-pointer flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+              aria-label="Voltar ao site"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+              <span className="hidden sm:inline text-xs font-label-caps">Voltar ao site</span>
             </button>
-          </div>
+          </header>
 
           {/* Body Content */}
-          <div className="p-6 max-h-[80vh] overflow-y-auto">
+          <main className="w-full max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12">
             {!isAuthenticated ? (
               /* LOGIN FORM */
-              <form onSubmit={handleLogin} className="space-y-4 max-w-sm mx-auto py-6">
+              <form onSubmit={handleLogin} className="space-y-5 max-w-md mx-auto mt-[8vh] p-6 md:p-8 bg-surface-container-low rounded-2xl">
                 {authError && (
                   <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-200 text-xs font-label-caps text-center">
                     {authError}
@@ -444,8 +531,9 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 )}
 
                 <div>
-                  <label className="block font-label-caps text-xs text-parchment mb-1.5">Usuário</label>
+                  <label htmlFor="admin-username" className="block font-label-caps text-xs text-parchment mb-1.5">Usuário</label>
                   <input
+                    id="admin-username"
                     type="text"
                     required
                     value={username}
@@ -456,8 +544,9 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 </div>
 
                 <div>
-                  <label className="block font-label-caps text-xs text-parchment mb-1.5">Senha</label>
+                  <label htmlFor="admin-password" className="block font-label-caps text-xs text-parchment mb-1.5">Senha</label>
                   <input
+                    id="admin-password"
                     type="password"
                     required
                     value={password}
@@ -481,11 +570,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
               </form>
             ) : (
               /* ADMIN DASHBOARD & EDITING FORM */
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Header Session Actions */}
-                <div className="flex items-center justify-between bg-surface-container-high/40 p-3.5 rounded-xl border border-surface-variant/30">
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                     <span className="font-label-caps text-xs text-secondary font-bold">
                       Sessão Ativa do Curador ({allVehicles.length} Veículos no Acervo)
                     </span>
@@ -500,23 +589,23 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 </div>
 
                 {/* Tabs: Form Completo vs Auto-Fill Inteligente */}
-                <div className="flex border-b border-surface-variant/40 space-x-2">
+                <nav aria-label="Seções administrativas" className="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl border border-surface-variant/30 sticky top-[82px] z-30">
                   <button
                     type="button"
                     onClick={() => {
                       playMechanicalClick('click');
                       setActiveTab('form');
                     }}
-                    className={`px-4 py-2.5 font-label-caps text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    className={`min-h-11 px-3 py-2.5 rounded-lg font-label-caps text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-secondary ${
                       activeTab === 'form'
-                        ? 'border-secondary text-secondary bg-surface-container/60 rounded-t-xl'
-                        : 'border-transparent text-on-surface-variant hover:text-parchment'
+                        ? 'text-parchment bg-surface-container-highest'
+                        : 'text-on-surface-variant hover:text-parchment'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[16px]">
                       {editingVehicleId ? 'edit_note' : 'edit_document'}
                     </span>
-                    <span>{editingVehicleId ? 'Editando Veículo' : 'Cadastro Completo / Personalizado'}</span>
+                    <span>{editingVehicleId ? 'Editando' : 'Completo'}</span>
                   </button>
 
                   <button
@@ -525,21 +614,32 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       playMechanicalClick('click');
                       setActiveTab('express');
                     }}
-                    className={`px-4 py-2.5 font-label-caps text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    className={`min-h-11 px-3 py-2.5 rounded-lg font-label-caps text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-secondary ${
                       activeTab === 'express'
-                        ? 'border-amber-400 text-amber-300 bg-amber-950/30 rounded-t-xl'
-                        : 'border-transparent text-on-surface-variant hover:text-parchment'
+                        ? 'text-parchment bg-surface-container-highest'
+                        : 'text-on-surface-variant hover:text-parchment'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[16px] text-amber-400">auto_awesome</span>
-                    <span>Cadastro Rápido Inteligente (Marca/Modelo/Ano)</span>
+                    <span>Cadastro rápido</span>
                   </button>
-                </div>
+                  <button
+                    type="button"
+                    onClick={() => { playMechanicalClick('click'); setActiveTab('collection'); }}
+                    className={`min-h-11 px-3 py-2.5 rounded-lg font-label-caps text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-secondary ${activeTab === 'collection' ? 'text-parchment bg-surface-container-highest' : 'text-on-surface-variant hover:text-parchment'}`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">directions_car</span>
+                    <span>Acervo</span>
+                  </button>
+                </nav>
 
                 {successMsg && (
-                  <div className="p-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-label-caps flex items-center space-x-2">
+                  <div role="status" className="p-4 bg-primary-container rounded-xl text-primary-fixed text-xs flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">check_circle</span>
                     <span>{successMsg}</span>
+                    </div>
+                    {savedShareId && <a href={`/?v=${encodeURIComponent(savedShareId)}`} className="font-label-caps text-secondary underline underline-offset-4">Ver no site</a>}
                   </div>
                 )}
 
@@ -603,7 +703,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     <button
                       type="button"
                       onClick={() => handleGenerateSmartSpec(expressBrand, expressModel, expressYear)}
-                      className="w-full bg-amber-500 hover:bg-amber-400 text-deep-charcoal font-label-caps font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer shadow-lg flex items-center justify-center space-x-2"
+                      className="w-full bg-secondary hover:bg-secondary-fixed text-on-secondary font-label-caps font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer flex items-center justify-center space-x-2"
                     >
                       <span className="material-symbols-outlined text-[18px]">bolt</span>
                       <span>Gerar Ficha do Veículo</span>
@@ -797,6 +897,14 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                       </div>
                     </div>
 
+                    <div>
+                      <label htmlFor="vehicle-status" className="block font-label-caps text-xs text-on-surface-variant mb-1">Status na coleção</label>
+                      <select id="vehicle-status" value={vehicleStatus} onChange={(e) => setVehicleStatus(e.target.value as VehicleStatus)} className="w-full px-3.5 py-2.5 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-secondary">
+                        {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                      <p className="mt-1.5 text-[11px] text-on-surface-variant">Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.</p>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-label-caps text-xs text-on-surface-variant mb-1">Subtítulo / Destaque</label>
@@ -903,6 +1011,10 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                             {imagePreviews[slot] && (
                               <div className="relative h-40 w-full rounded-xl overflow-hidden border border-secondary/40 shadow-md">
                                 <img src={imagePreviews[slot]} alt={`Preview ${IMAGE_LABELS[slot]}`} className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => handleRemoveImage(slot)} aria-label={`Remover ${IMAGE_LABELS[slot]}`} className="absolute left-2 top-2 min-h-9 px-2.5 rounded-lg bg-background/90 text-rose-300 text-[10px] font-label-caps flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[15px]">delete</span>
+                                  Remover
+                                </button>
                                 {imageSlots[slot].startsWith('http') && (
                                   <div className="absolute top-2 right-2 bg-emerald-950/90 border border-emerald-400/60 text-emerald-300 font-label-caps text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-md">
                                     <span className="material-symbols-outlined text-[13px]">cloud_done</span>
@@ -919,12 +1031,13 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     <div className="flex gap-3 pt-2">
                       <button
                         type="submit"
-                        className="flex-1 bg-secondary hover:bg-amber-glow text-deep-charcoal font-label-caps font-bold text-xs py-3 rounded-xl transition-all cursor-pointer shadow-lg flex items-center justify-center space-x-2"
+                        disabled={saving}
+                        className="flex-1 bg-secondary hover:bg-amber-glow disabled:opacity-50 disabled:cursor-wait text-deep-charcoal font-label-caps font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer flex items-center justify-center space-x-2"
                       >
                         <span className="material-symbols-outlined text-[18px]">
                           {editingVehicleId ? 'save' : 'add_circle'}
                         </span>
-                        <span>{editingVehicleId ? 'Salvar Alterações no Veículo' : 'Salvar Post'}</span>
+                        <span>{saving ? 'Salvando…' : editingVehicleId ? 'Salvar Alterações no Veículo' : 'Salvar veículo'}</span>
                       </button>
 
                       {editingVehicleId && (
@@ -941,14 +1054,35 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 )}
 
                 {/* GERENCIADOR DE TODOS OS VEÍCULOS DA COLEÇÃO */}
-                <div className="space-y-3 pt-6 border-t border-surface-variant/40">
+                {activeTab === 'collection' && <section className="space-y-5" aria-labelledby="collection-heading">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-headline-md text-sm text-parchment font-bold">
-                      Gerenciar Veículos do Acervo Completo ({allVehicles.length})
-                    </h4>
-                    <span className="text-[11px] text-on-surface-variant font-mono">
-                      Edite, exclua ou arraste na fila
+                    <h2 id="collection-heading" className="font-headline-md text-2xl md:text-3xl text-parchment">
+                      Acervo completo
+                    </h2>
+                    <span className="text-xs text-on-surface-variant tabular-nums">
+                      {filteredVehicles.length} de {allVehicles.length}
                     </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_130px_140px_auto] gap-3">
+                    <label className="relative">
+                      <span className="sr-only">Buscar no acervo</span>
+                      <span className="material-symbols-outlined absolute left-3 top-3 text-[18px] text-on-surface-variant">search</span>
+                      <input value={collectionSearch} onChange={(e) => setCollectionSearch(e.target.value)} placeholder="Buscar por nome, código ou ano" className="w-full min-h-11 pl-10 pr-3 bg-surface-container border border-surface-variant/40 rounded-xl text-sm text-parchment focus:outline-none focus:border-secondary" />
+                    </label>
+                    <select aria-label="Filtrar por marca" value={collectionBrand} onChange={(e) => setCollectionBrand(e.target.value)} className="min-h-11 px-3 bg-surface-container border border-surface-variant/40 rounded-xl text-sm text-parchment focus:outline-none focus:border-secondary">
+                      <option value="all">Todas as marcas</option>
+                      {availableBrands.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+                    </select>
+                    <select aria-label="Filtrar por ano" value={collectionYear} onChange={(e) => setCollectionYear(e.target.value)} className="min-h-11 px-3 bg-surface-container border border-surface-variant/40 rounded-xl text-sm text-parchment focus:outline-none focus:border-secondary">
+                      <option value="all">Todos os anos</option>
+                      {availableYears.map((vehicleYear) => <option key={vehicleYear} value={vehicleYear}>{vehicleYear}</option>)}
+                    </select>
+                    <select aria-label="Filtrar por status" value={collectionStatus} onChange={(e) => setCollectionStatus(e.target.value as 'all' | VehicleStatus)} className="min-h-11 px-3 bg-surface-container border border-surface-variant/40 rounded-xl text-sm text-parchment focus:outline-none focus:border-secondary">
+                      <option value="all">Todos os status</option>
+                      {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                    <button type="button" onClick={() => { setCollectionSearch(''); setCollectionBrand('all'); setCollectionYear('all'); setCollectionStatus('all'); }} className="min-h-11 px-4 rounded-xl text-xs font-label-caps text-on-surface-variant hover:text-parchment hover:bg-surface-container">Limpar</button>
                   </div>
 
                   <div className="rounded-xl border border-surface-variant/30 bg-surface-container/40 px-3 py-2.5 flex items-start space-x-2">
@@ -961,8 +1095,10 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     </p>
                   </div>
 
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {allVehicles.map((v, index) => {
+                  <div className="space-y-2">
+                    {filteredVehicles.length === 0 && <div className="py-16 text-center bg-surface-container-low rounded-2xl"><span className="material-symbols-outlined text-3xl text-on-surface-variant">search_off</span><p className="mt-3 text-parchment">Nenhum veículo encontrado.</p><p className="text-sm text-on-surface-variant">Ajuste ou limpe os filtros para ver o acervo.</p></div>}
+                    {filteredVehicles.map((v) => {
+                      const index = allVehicles.findIndex((vehicle) => vehicle.id === v.id);
                       const isDragging = draggingId === v.id;
                       const isDropTarget = dragOverIndex === index && !isDragging;
                       return (
@@ -1007,10 +1143,23 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                               <div className="font-mono text-[10px] text-secondary truncate">
                                 #{v.shareId} • {v.year}
                               </div>
+                              <span className="inline-block mt-1 text-[9px] font-label-caps text-on-surface-variant">{STATUS_OPTIONS.find((option) => option.value === v.status)?.label}</span>
+                              <select aria-label={`Alterar status de ${v.title} no celular`} value={v.status} onChange={(e) => handleStatusChange(v, e.target.value as VehicleStatus)} className="md:hidden block mt-1 h-8 max-w-28 px-1 bg-surface-container border border-surface-variant/40 rounded-md text-[9px] text-parchment focus:outline-none focus:border-secondary">
+                                {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                              </select>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-2 shrink-0 pointer-events-none">
+                          <div className="flex items-center space-x-1 shrink-0 pointer-events-none">
+                            <div className="pointer-events-auto flex sm:hidden">
+                              <button type="button" onClick={() => handleMoveVehicle(v.id, -1)} disabled={index === 0} aria-label={`Mover ${v.title} para cima`} className="p-2 text-on-surface-variant disabled:opacity-25"><span className="material-symbols-outlined text-[18px]">arrow_upward</span></button>
+                              <button type="button" onClick={() => handleMoveVehicle(v.id, 1)} disabled={index === allVehicles.length - 1} aria-label={`Mover ${v.title} para baixo`} className="p-2 text-on-surface-variant disabled:opacity-25"><span className="material-symbols-outlined text-[18px]">arrow_downward</span></button>
+                            </div>
+                            <div className="pointer-events-auto hidden md:block">
+                              <select aria-label={`Alterar status de ${v.title}`} value={v.status} onChange={(e) => handleStatusChange(v, e.target.value as VehicleStatus)} className="h-9 px-2 bg-surface-container border border-surface-variant/40 rounded-lg text-[10px] text-parchment focus:outline-none focus:border-secondary">
+                                {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                              </select>
+                            </div>
                             <div className="pointer-events-auto">
                               <button
                                 onClick={() => handleStartEditing(v)}
@@ -1023,7 +1172,7 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                             </div>
                             <div className="pointer-events-auto">
                               <button
-                                onClick={() => handleDeleteVehicle(v.id, v.title)}
+                                onClick={(event) => handleDeleteVehicle(v, event.currentTarget)}
                                 className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex items-center space-x-1 font-label-caps text-[11px]"
                                 title="Excluir este veículo"
                               >
@@ -1036,12 +1185,37 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                       );
                     })}
                   </div>
-                </div>
+                </section>}
               </div>
             )}
-          </div>
+          </main>
         </motion.div>
+
+        {deleteCandidate && (
+          <div className="fixed inset-0 z-50 grid place-items-center p-5 bg-background/80" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDeleteDialog(); }}>
+            <motion.div ref={deleteDialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-title" initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-md rounded-2xl bg-surface-container-low p-6 shadow-2xl">
+              <div className="flex gap-4 items-start">
+                <img src={deleteCandidate.image} alt="" className="w-20 h-20 rounded-xl object-cover" />
+                <div>
+                  <h2 id="delete-title" className="font-headline-md text-2xl text-parchment">Excluir veículo?</h2>
+                  <p className="mt-2 text-sm text-on-surface-variant"><strong className="text-parchment">{deleteCandidate.title}</strong> será removido do acervo e da vitrine.</p>
+                </div>
+              </div>
+              <p className="mt-5 text-xs text-on-surface-variant">Você terá 8 segundos para desfazer esta ação.</p>
+              <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3">
+                <button type="button" onClick={closeDeleteDialog} className="min-h-11 px-4 rounded-xl text-xs font-label-caps text-on-surface-variant hover:bg-surface-container">Cancelar</button>
+                <button type="button" onClick={confirmDeleteVehicle} className="min-h-11 px-4 rounded-xl bg-error-container text-on-error-container text-xs font-label-caps font-bold hover:bg-error">Excluir veículo</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {pendingDelete && (
+          <div role="status" className="fixed z-50 left-5 right-5 bottom-5 sm:left-auto sm:w-[420px] rounded-xl bg-surface-container-highest p-4 shadow-2xl flex items-center justify-between gap-4">
+            <p className="text-sm text-parchment"><strong>{pendingDelete.vehicle.title}</strong> foi removido.</p>
+            <button type="button" onClick={undoDeleteVehicle} className="min-h-10 px-3 rounded-lg text-secondary font-label-caps text-xs font-bold hover:bg-surface-container">Desfazer</button>
+          </div>
+        )}
       </div>
-    </AnimatePresence>
   );
 }
