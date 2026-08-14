@@ -1,0 +1,4 @@
+.agents/
+supabase/manual/
+skills-lock.json
+*.log
