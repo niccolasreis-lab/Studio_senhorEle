@@ -81,11 +81,11 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
         }`}
       >
         <div className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-          <a href="#" aria-label="Studio Senhorele - Início" className="flex items-center space-x-3 group">
+          <a href="#" aria-label="Studio SenhorEle - Início" className="flex items-center space-x-3 group">
             <div className="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border border-secondary/40 shadow-md flex items-center justify-center bg-surface-container-low group-hover:border-secondary transition-all">
               <img 
                 src="/assets/images/logo-senhorele-hero.png"
-                alt="Logotipo Studio Senhorele" 
+                alt="Logotipo Studio SenhorEle"
                 width="192"
                 height="192"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -152,14 +152,14 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="sm:hidden text-on-surface-variant hover:text-primary transition-colors p-1"
+              className="sm:hidden min-h-11 min-w-11 inline-flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-lg"
               onClick={() => {
                 playMechanicalClick('click');
                 setIsOpen(!isOpen);
               }}
               aria-label="Alternar menu"
             >
-              <span className="material-symbols-outlined text-[28px]">{isOpen ? 'close' : 'menu'}</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">{isOpen ? 'close' : 'menu'}</span>
             </motion.button>
           </div>
         </div>

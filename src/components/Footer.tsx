@@ -11,7 +11,7 @@ interface FooterProps {
 }
 
 const WHATSAPP_UPDATES_URL = buildWhatsAppLink(
-  'Olá, Studio Senhorele! Gostaria de receber novidades sobre o acervo.',
+  'Olá, Studio SenhorEle! Gostaria de receber novidades sobre o acervo.',
 );
 
 export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onToggleFilmGrain }: FooterProps) {
@@ -32,12 +32,12 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
             <a
               href="#"
               className="flex items-center space-x-3 group w-fit"
-              aria-label="Studio Senhorele — voltar ao início"
+              aria-label="Studio SenhorEle — voltar ao início"
             >
               <div className="w-10 h-10 rounded-full overflow-hidden border border-secondary/40 shadow-md flex items-center justify-center bg-surface-container-low">
                 <img
                   src="/assets/images/logo-senhorele-hero.png"
-                  alt="Studio Senhorele Logo"
+                  alt="Studio SenhorEle Logo"
                   width="192"
                   height="192"
                   loading="lazy"
@@ -46,12 +46,12 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
                 />
               </div>
               <div className="font-headline-md text-headline-md text-parchment tracking-tighter group-hover:text-amber-glow transition-colors">
-                Studio Senhorele
+                Studio SenhorEle
               </div>
             </a>
 
             <p className="font-body-md text-body-md text-on-surface-variant max-w-sm">
-              © {currentYear} Studio Senhorele. {t.footer.rights}
+              © {currentYear} Studio SenhorEle. {t.footer.rights}
             </p>
 
             <div className="pt-2 flex flex-wrap gap-3">
@@ -142,7 +142,7 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
             </a>
             <a
               className="font-body-md text-body-md text-on-surface-variant hover:text-parchment underline underline-offset-4 transition-all"
-              href="#about"
+              href="#purpose"
             >
               {t.nav.purpose}
             </a>

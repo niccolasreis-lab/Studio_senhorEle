@@ -8,8 +8,6 @@ export interface Translations {
     inquire: string;
   };
   hero: {
-    title: string;
-    subtitle: string;
     explore: string;
   };
   about: {
@@ -133,11 +131,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Coleção',
       about: 'Nossa História',
       purpose: 'Propósito',
-      inquire: 'Contato',
+      inquire: 'Conversar sobre o acervo',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'Uma coleção de clássicos VW Air Cooled e Porsche — restauração, preparação e paixão por veículos antigos.',
       explore: 'EXPLORAR',
     },
     about: {
@@ -243,10 +239,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Curadoria especializada em clássicos automotivos VW Air-Cooled e Porsche. Preservando histórias e movendo paixões.',
       navigationTitle: 'Navegação',
-      contactTitle: 'Contato & Localização',
+      contactTitle: 'Conversas sobre o acervo',
       hoursTitle: 'Atendimento',
       hoursText: 'Segunda a Sexta: 09h às 18h',
-      rights: 'Todos os direitos reservados. Studio SenhorEle.',
+      rights: 'Todos os direitos reservados.',
     },
     floating: {
       whatsapp: 'WhatsApp Curadoria',
@@ -258,11 +254,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Collection',
       about: 'Our Story',
       purpose: 'Purpose',
-      inquire: 'Contact',
+      inquire: 'Talk about the collection',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'A curated collection of classic VW Air-Cooled & Porsche models — restoration, performance & automotive passion.',
       explore: 'EXPLORE',
     },
     about: {
@@ -368,10 +362,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Specialized curation of classic VW Air-Cooled and Porsche vehicles. Preserving history and moving passion.',
       navigationTitle: 'Navigation',
-      contactTitle: 'Contact & Location',
+      contactTitle: 'Collection conversations',
       hoursTitle: 'Opening Hours',
       hoursText: 'Monday to Friday: 09:00 - 18:00',
-      rights: 'All rights reserved. Studio SenhorEle.',
+      rights: 'All rights reserved.',
     },
     floating: {
       whatsapp: 'WhatsApp Curation',
@@ -383,11 +377,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Kollektion',
       about: 'Über uns',
       purpose: 'Philosophie',
-      inquire: 'Kontakt',
+      inquire: 'Über die Sammlung sprechen',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'Eine exklusive Sammlung von VW Luftgekühlt & Porsche Klassikern — Restaurierung, Performance & Leidenschaft.',
       explore: 'ENTDECKEN',
     },
     about: {
@@ -493,10 +485,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Spezialisierte Kuratierung von VW Luftgekühlt- und Porsche-Klassikern. Geschichte bewahren und Leidenschaft bewegen.',
       navigationTitle: 'Navigation',
-      contactTitle: 'Kontakt & Standort',
+      contactTitle: 'Gespräche über die Sammlung',
       hoursTitle: 'Öffnungszeiten',
       hoursText: 'Montag bis Freitag: 09:00 - 18:00 Uhr',
-      rights: 'Alle Rechte vorbehalten. Studio SenhorEle.',
+      rights: 'Alle Rechte vorbehalten.',
     },
     floating: {
       whatsapp: 'WhatsApp Beratung',
