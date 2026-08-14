@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 import { CustomVehicle } from './customVehicleService';
 
 export const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
@@ -15,13 +15,50 @@ export const setSupabaseAnonKey = (key: string): void => {
   localStorage.setItem(STORAGE_KEY_ANON, key.trim());
 };
 
+let supabaseClient: SupabaseClient | null = null;
+
 export const getSupabaseClient = () => {
   const key = getSupabaseAnonKey();
   if (!key) return null;
-  return createClient(SUPABASE_URL, key);
+  if (!supabaseClient) {
+    supabaseClient = createClient(SUPABASE_URL, key, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    });
+  }
+  return supabaseClient;
 };
 
 export const SupabaseService = {
+  async getSession(): Promise<Session | null> {
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const { data } = await client.auth.getSession();
+    return data.session;
+  },
+
+  onAuthStateChange(callback: (session: Session | null) => void) {
+    const client = getSupabaseClient();
+    if (!client) return () => undefined;
+    const { data } = client.auth.onAuthStateChange((_event, session) => callback(session));
+    return () => data.subscription.unsubscribe();
+  },
+
+  async signIn(email: string, password: string): Promise<string | null> {
+    const client = getSupabaseClient();
+    if (!client) return 'A conexão com o Supabase não está configurada.';
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) return 'E-mail ou senha inválidos.';
+    if (data.user.app_metadata?.role !== 'admin') {
+      await client.auth.signOut();
+      return 'Este usuário não possui acesso administrativo.';
+    }
+    return null;
+  },
+
+  async signOut(): Promise<void> {
+    await getSupabaseClient()?.auth.signOut();
+  },
+
   /** Faz upload de uma imagem para o bucket público de veículos. */
   async uploadImage(file: File, path?: string): Promise<string | null> {
     try {
@@ -48,10 +85,10 @@ export const SupabaseService = {
     }
   },
 
-  async fetchVehicles(): Promise<CustomVehicle[]> {
+  async fetchVehicles(): Promise<CustomVehicle[] | null> {
     try {
       const client = getSupabaseClient();
-      if (!client) return [];
+      if (!client) return null;
 
       const { data, error } = await client
         .from('custom_vehicles')
@@ -60,7 +97,7 @@ export const SupabaseService = {
 
       if (error || !data) {
         console.warn('Supabase fetch notice:', error?.message);
-        return [];
+        return null;
       }
 
       return data.map((item: any) => ({
@@ -83,7 +120,7 @@ export const SupabaseService = {
       }));
     } catch (err) {
       console.warn('Supabase connection warning:', err);
-      return [];
+      return null;
     }
   },
 

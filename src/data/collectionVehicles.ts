@@ -358,3 +358,35 @@ export function curatedYearForModel(modelName: string): number | null {
   if (pool.length !== 1) return null;
   return pool[0].years[0] ?? null;
 }
+
+export interface CuratedModelMetadata {
+  brand: string;
+  title: string;
+  years: number[];
+}
+
+/**
+ * Metadados editoriais de um modelo identificado de forma única no acervo.
+ * Modelos genéricos ou ambíguos retornam null para preservar a escolha manual.
+ */
+export function curatedMetadataForModel(modelName: string): CuratedModelMetadata | null {
+  const key = normalizeKey(modelName);
+  if (!key) return null;
+
+  const exact = CURATED_COLLECTION.filter((entry) =>
+    entry.exactNames.some((name) => normalizeKey(name) === key)
+  );
+  const pool = exact.length > 0
+    ? exact
+    : CURATED_COLLECTION.filter((entry) =>
+        entry.modelKeys.some((modelKey) => key.includes(normalizeKey(modelKey)))
+      );
+
+  if (pool.length !== 1) return null;
+
+  return {
+    brand: pool[0].brand,
+    title: pool[0].title,
+    years: [...pool[0].years],
+  };
+}
