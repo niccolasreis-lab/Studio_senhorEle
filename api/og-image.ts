@@ -1,11 +1,47 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
-import { findStaticShareItem, normalizeShareKey } from './og-share-data';
 
 type Handler = (req: any, res: any) => Promise<void> | void;
 
 const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BAB7c_Baja_BHKFJvws7hg_HzHRIVAr';
+
+const normalizeShareKey = (raw: string): string =>
+  raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// ---------------------------------------------------------------------------
+// Imagens dos itens estáticos (espelho de api/og.ts — STATIC_SHARE_ITEMS).
+// Inline: cada função de api/ é empacotada individualmente pelo Vercel (nft),
+// e imports relativos a outros módulos quebram no runtime.
+// ---------------------------------------------------------------------------
+const STATIC_IMAGE_BY_KEY: Record<string, string> = {
+  insta91173: '/assets/images/porsche-911-classic-1973.jpg',
+  postpor9111973: '/assets/images/porsche-911-classic-1973.jpg',
+  instakmb70: '/assets/images/vw-kombi-corujinha-1970.jpg',
+  postvwkombicorujinha: '/assets/images/vw-kombi-corujinha-1970.jpg',
+  instafsc68: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  postfuscacalstyle: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  instaawl67: '/assets/images/aero-willys-1967.jpg',
+  postaerowillys: '/assets/images/aero-willys-1967.jpg',
+  instabox767: '/assets/images/aircooled-box-767.jpg',
+  postboxeraircooled: '/assets/images/aircooled-box-767.jpg',
+  instasrl06: '/assets/images/logo-senhorele-192.jpg',
+  postcuradoriasenhorele: '/assets/images/logo-senhorele-192.jpg',
+  srl9111973: '/assets/images/porsche-911-classic-1973.jpg',
+  porsche911: '/assets/images/porsche-911-classic-1973.jpg',
+  srlkmb1970: '/assets/images/vw-kombi-corujinha-1970.jpg',
+  vwkombi: '/assets/images/vw-kombi-corujinha-1970.jpg',
+  srljfsc1968: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  vwfusacal: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  srlawl1967: '/assets/images/aero-willys-1967.jpg',
+  aerowillys: '/assets/images/aero-willys-1967.jpg',
+  srlbox1976: '/assets/images/aircooled-box-767.jpg',
+  aircooledbox767: '/assets/images/aircooled-box-767.jpg',
+  srljfsc1994: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  vwfusca1994: '/assets/images/vw-fusca-cal-style-1968.jpg',
+  srl9111989: '/assets/images/porsche-911-classic-1973.jpg',
+  porsche911carrera1989: '/assets/images/porsche-911-classic-1973.jpg',
+};
 
 const buildOrigin = (req: any): string => {
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -20,26 +56,14 @@ const absolutize = (url: string, origin: string): string => {
   return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
-const renderFromSource = async (
-  res: any,
-  source: Buffer | string,
-): Promise<void> => {
-  const upstream =
-    typeof source === 'string'
-      ? await fetch(source, {
-          headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*' },
-        })
-      : null;
+const renderFromSource = async (res: any, sourceUrl: string): Promise<void> => {
+  const upstream = await fetch(sourceUrl, {
+    headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*' },
+  });
+  if (!upstream.ok) throw new Error(`Source returned ${upstream.status}`);
 
-  let input: Buffer;
-  if (upstream) {
-    if (!upstream.ok) throw new Error(`Source returned ${upstream.status}`);
-    input = Buffer.from(await upstream.arrayBuffer());
-  } else {
-    input = Buffer.isBuffer(source) ? source : Buffer.from(source);
-  }
-
-  const body = await sharp(input)
+  const source = Buffer.from(await upstream.arrayBuffer());
+  const body = await sharp(source)
     .rotate()
     .resize(1200, 630, { fit: 'cover', position: 'centre' })
     .jpeg({ quality: 82, progressive: true, chromaSubsampling: '4:2:0' })
@@ -66,9 +90,9 @@ const handler: Handler = async (req, res) => {
 
     const origin = buildOrigin(req);
 
-    const staticItem = findStaticShareItem(key);
-    if (staticItem?.image) {
-      await renderFromSource(res, absolutize(staticItem.image, origin));
+    const staticImage = STATIC_IMAGE_BY_KEY[key];
+    if (staticImage) {
+      await renderFromSource(res, absolutize(staticImage, origin));
       return;
     }
 
