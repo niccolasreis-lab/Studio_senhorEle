@@ -85,7 +85,7 @@ const renderPage = (
 ): string => {
   const title = escapeHtml(result.title);
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
-  const image = absolutize(result.image, origin);
+  const image = absolutize(result.image || '/assets/images/af-logo-192.png', origin);
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
   const tag = result.kind === 'vehicle' ? 'Veículo' : 'Post';
   const isInstagram = result.kind === 'instagram';
