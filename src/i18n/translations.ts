@@ -56,6 +56,8 @@ export interface Translations {
     carouselHint: string;
     viewDetails: string;
     shareId: string;
+    share: string;
+    copied: string;
     noResultsTitle: string;
     noResultsText: string;
   };
@@ -183,6 +185,8 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Use as setas do teclado ou deslize para navegar pelo acervo 3D',
       viewDetails: 'Ver Ficha Técnica',
       shareId: 'CÓDIGO',
+      share: 'Compartilhar',
+      copied: 'Link copiado!',
       noResultsTitle: 'Nenhum clássico encontrado',
       noResultsText: 'Tente ajustar os termos de busca ou selecionar outro filtro acima.',
     },
@@ -308,6 +312,8 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Use keyboard arrow keys or swipe to navigate the 3D collection',
       viewDetails: 'View Specifications',
       shareId: 'SHARE ID',
+      share: 'Share',
+      copied: 'Link copied!',
       noResultsTitle: 'No classic vehicles found',
       noResultsText: 'Try adjusting your search query or selecting a different filter above.',
     },
@@ -433,6 +439,8 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Nutzen Sie die Pfeiltasten oder Wischen zur Navigation in der 3D-Galerie',
       viewDetails: 'Technische Daten',
       shareId: 'SHARE-ID',
+      share: 'Teilen',
+      copied: 'Link kopiert!',
       noResultsTitle: 'Keine Klassiker gefunden',
       noResultsText: 'Bitte passen Sie Ihre Suchanfrage oder den gewählten Filter an.',
     },

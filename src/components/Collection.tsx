@@ -6,6 +6,7 @@ import { Translations } from '../i18n/translations';
 import { use3DTilt } from '../hooks/use3DTilt';
 import { CustomVehicleService, VehicleStatus } from '../services/customVehicleService';
 import { buildWhatsAppLink } from '../config/contact';
+import { buildShareUrl } from '../utils/share';
 
 interface CarItem {
   id: string;
@@ -42,8 +43,36 @@ function IntersectionObserverGridCard({
 }: IntersectionObserverGridCardProps) {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
+
+  const handleShare = async () => {
+    playMechanicalClick('click');
+    const shareUrl = buildShareUrl(item.shareId);
+    const shareText = `Confira este clássico no Studio Senhorele: ${item.title} (#${item.shareId})`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: item.title,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if share was dismissed or unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt('URL:', shareUrl);
+    }
+  };
 
   useEffect(() => {
     const element = cardRef.current;
@@ -196,6 +225,16 @@ function IntersectionObserverGridCard({
           >
             <span className="material-symbols-outlined text-[16px]">info</span>
             <span>{t.collection.viewDetails}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShare}
+            className="text-xs font-label-caps text-on-surface-variant hover:text-parchment transition-colors flex items-center space-x-1 cursor-pointer"
+            title={t.collection.share}
+          >
+            <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'link'}</span>
+            <span>{copied ? t.collection.copied : t.collection.share}</span>
           </button>
 
           <a

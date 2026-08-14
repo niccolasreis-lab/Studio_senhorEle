@@ -4,7 +4,6 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
 import Collection from './components/Collection';
-import InstagramSection from './components/InstagramSection';
 import Footer from './components/Footer';
 import CustomCursor from './components/CustomCursor';
 import FloatingContactWidget from './components/FloatingContactWidget';
@@ -89,7 +88,6 @@ export default function App() {
             <Collection
               onOpenDetail={(vehicleId) => setSelectedVehicleDetail(vehicleId)}
             />
-            <InstagramSection />
           </main>
           <Footer 
             isFilmGrainEnabled={isFilmGrainEnabled}
