@@ -235,6 +235,17 @@ const renderNotFound = (origin: string): string => {
 };
 
 const handler: Handler = async (req, res) => {
+  try {
+    await handle(req, res);
+  } catch (err: any) {
+    console.error('[og] unhandled error', err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.end(`OG_ERROR: ${err?.message || err}\n${err?.stack || ''}`);
+  }
+};
+
+async function handle(req: any, res: any) {
   const origin = buildOrigin(req);
   const rawId = String(req.query?.id || '').trim();
   const key = normalizeShareKey(rawId);
@@ -268,6 +279,6 @@ const handler: Handler = async (req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(renderNotFound(origin));
-};
+}
 
 export default handler;

@@ -603,10 +603,6 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                   <span className="material-symbols-outlined text-[18px]">lock_open</span>
                   <span>{authSubmitting ? 'Entrando…' : 'Entrar no Painel'}</span>
                 </button>
-
-                <p className="text-[11px] text-on-surface-variant/70 text-center font-mono pt-2">
-                  Acesso protegido pelo Supabase Auth.
-                </p>
               </form>
             ) : (
               /* ADMIN DASHBOARD & EDITING FORM */
