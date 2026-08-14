@@ -63,6 +63,8 @@ export interface Translations {
     viewPost: string;
     inquirePost: string;
     badge: string;
+    sharePost: string;
+    linkCopied: string;
   };
   inquire: {
     title: string;
@@ -188,6 +190,8 @@ export const translations: Record<Language, Translations> = {
       viewPost: 'Ver no Instagram',
       inquirePost: 'Consultar via WhatsApp',
       badge: 'Destaque Instagram',
+      sharePost: 'Compartilhar',
+      linkCopied: 'Link copiado!',
     },
     inquire: {
       title: 'Entrar em Contato',
@@ -309,8 +313,10 @@ export const translations: Record<Language, Translations> = {
     },
     instagramCard: {
       viewPost: 'View on Instagram',
-      inquirePost: 'Inquire on WhatsApp',
+      inquirePost: 'Ask via WhatsApp',
       badge: 'Instagram Highlight',
+      sharePost: 'Share',
+      linkCopied: 'Link copied!',
     },
     inquire: {
       title: 'Contact Us',
@@ -433,7 +439,9 @@ export const translations: Record<Language, Translations> = {
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',
       inquirePost: 'Über WhatsApp anfragen',
-      badge: 'Instagram Highlight',
+      badge: 'Instagram-Highlight',
+      sharePost: 'Teilen',
+      linkCopied: 'Link kopiert!',
     },
     inquire: {
       title: 'Kontakt aufnehmen',

@@ -4,6 +4,7 @@ import { playMechanicalClick } from '../utils/audio';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { useLanguage } from '../i18n/LanguageContext';
 import { buildWhatsAppLink } from '../config/contact';
+import { buildShareUrl } from '../utils/share';
 import ImageLightboxModal, { GalleryItem } from './ImageLightboxModal';
 
 export interface VehicleDetail {
@@ -326,7 +327,7 @@ export default function VehicleDetailModal({
 
   const handleShare = async () => {
     playMechanicalClick('click');
-    const shareUrl = `${window.location.origin}${window.location.pathname}?v=${vehicle.shareId}`;
+    const shareUrl = buildShareUrl(vehicle.shareId);
     const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}`;
 
     if (navigator.share) {
@@ -349,7 +350,7 @@ export default function VehicleDetailModal({
 
   const handleWhatsAppShare = () => {
     playMechanicalClick('click');
-    const shareUrl = `${window.location.origin}${window.location.pathname}?v=${vehicle.shareId}`;
+    const shareUrl = buildShareUrl(vehicle.shareId);
     const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
   };

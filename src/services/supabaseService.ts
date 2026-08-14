@@ -5,7 +5,7 @@ export const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
 export const SUPABASE_PROJECT_REF = 'rucqvvollyrlgyekoelq';
 
 const STORAGE_KEY_ANON = 'studio_supabase_anon_key';
-const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_BAB7c_Baja_BHKFJvws7hg_HzHRIVAr';
+export const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_BAB7c_Baja_BHKFJvws7hg_HzHRIVAr';
 
 export const getSupabaseAnonKey = (): string => {
   return localStorage.getItem(STORAGE_KEY_ANON) || DEFAULT_PUBLISHABLE_KEY;
