@@ -9,17 +9,29 @@
  * este endpoint devolve HTML estático com as meta tags og:* corretas de cada item.
  */
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, DEFAULT_PUBLISHABLE_KEY } from '../src/services/supabaseService';
-import {
-  buildShareItemResult,
-  findStaticShareItem,
-  normalizeShareKey,
-  ShareItemResult,
-} from '../src/data/shareRegistry';
 
 type Handler = (req: any, res: any) => Promise<void> | void;
 
+interface ShareItemResult {
+  kind: 'instagram' | 'vehicle';
+  id: string;
+  shareId: string;
+  title: string;
+  description: string;
+  image: string;
+  permalink?: string;
+  subtitle?: string;
+  year?: string;
+  siteUrl: string;
+  redirectUrl: string;
+}
+
 const SITE_NAME = 'Studio Senhor Ele';
+const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BAB7c_Baja_BHKFJvws7hg_HzHRIVAr';
+
+const normalizeShareKey = (raw: string): string =>
+  raw.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const escapeHtml = (value: unknown): string =>
   String(value ?? '')
@@ -47,22 +59,28 @@ async function findCustomVehicle(id: string, origin: string): Promise<ShareItemR
   if (!key) return null;
 
   try {
-    const client = createClient(SUPABASE_URL, DEFAULT_PUBLISHABLE_KEY, {
+    const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
     const { data, error } = await client
       .from('custom_vehicles')
       .select('share_id, id, title, subtitle, image, year, engine, transmission, description, status')
-      .or(`share_id.eq.${id},id.eq.${id}`)
       .in('status', ['published', 'reserved'])
-      .limit(1);
+      .limit(200);
 
     if (error || !data || data.length === 0) return null;
 
-    const row: any = data[0];
+    const row: any = data.find(
+      (vehicle: any) =>
+        normalizeShareKey(String(vehicle.share_id || '')) === key ||
+        normalizeShareKey(String(vehicle.id || '')) === key,
+    );
+    if (!row) return null;
+
     const shareId = row.share_id || id;
-    const item = {
+    const encodedShareId = encodeURIComponent(shareId);
+    return {
       kind: 'vehicle' as const,
       id: row.id || shareId,
       shareId,
@@ -71,9 +89,9 @@ async function findCustomVehicle(id: string, origin: string): Promise<ShareItemR
       image: row.image || '',
       subtitle: row.subtitle,
       year: String(row.year || ''),
+      siteUrl: `${origin}/?v=${encodedShareId}`,
+      redirectUrl: `${origin}/p/${encodedShareId}`,
     };
-
-    return buildShareItemResult(item, origin);
   } catch {
     return null;
   }
@@ -256,15 +274,6 @@ async function handle(req: any, res: any) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.end(renderNotFound(origin));
-    return;
-  }
-
-  const staticItem = findStaticShareItem(key);
-  if (staticItem) {
-    const result = buildShareItemResult(staticItem, origin);
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end(renderPage(result, origin));
     return;
   }
 
