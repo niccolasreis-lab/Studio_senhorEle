@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 build/
 dist/
 coverage/
@@ -8,4 +8,5 @@ coverage/
 !.env.example
 impeccable/
 .vercel
-"AF_LOGO Sr L_RGB.png"
+AF_LOGO Sr L_RGB.png
+
