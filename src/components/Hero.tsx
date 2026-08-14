@@ -35,7 +35,6 @@ export default function Hero() {
           className="w-full h-full object-cover scale-105"
         >
           <source src="/assets/videos/hero-video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
         </video>
         <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60"></div>
@@ -68,6 +67,8 @@ export default function Hero() {
             className="relative w-72 sm:w-96 md:w-[440px] lg:w-[500px] max-w-full h-auto object-contain drop-shadow-[0_12px_35px_rgba(0,0,0,0.85)] filter transition-transform duration-500 hover:scale-[1.02]"
           />
         </motion.div>
+
+        <div className="mt-6 max-w-2xl" />
       </motion.div>
       
       {/* Scroll Down Indicator with Fade & Pulse */}
@@ -89,7 +90,7 @@ export default function Hero() {
           <span className="font-label-caps text-xs md:text-sm text-on-surface-variant/80 group-hover:text-amber-glow mb-2 tracking-[0.25em] uppercase transition-colors">
             {t.hero.explore}
           </span>
-          <span className="material-symbols-outlined text-secondary text-[28px] md:text-[32px] group-hover:translate-y-1 transition-transform animate-bounce">
+          <span aria-hidden="true" className="material-symbols-outlined text-secondary text-[28px] md:text-[32px] group-hover:translate-y-1 transition-transform">
             keyboard_arrow_down
           </span>
         </motion.a>

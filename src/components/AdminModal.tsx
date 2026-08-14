@@ -4,6 +4,7 @@ import { playMechanicalClick } from '../utils/audio';
 import { CustomVehicleService, CustomVehicle, VehicleStatus } from '../services/customVehicleService';
 import { SupabaseService } from '../services/supabaseService';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
+import { curatedMetadataForModel } from '../data/collectionVehicles';
 
 const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: 'draft', label: 'Rascunho' },
@@ -20,12 +21,30 @@ interface AdminModalProps {
 
 export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminModalProps) {
   // Auth state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('studio_admin_logged') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    SupabaseService.getSession().then((session) => {
+      if (!mounted) return;
+      setIsAuthenticated(session?.user.app_metadata?.role === 'admin');
+      setAuthLoading(false);
+    });
+    const unsubscribe = SupabaseService.onAuthStateChange((session) => {
+      if (!mounted) return;
+      setIsAuthenticated(session?.user.app_metadata?.role === 'admin');
+      setAuthLoading(false);
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   // Mode & Tabs
   const [activeTab, setActiveTab] = useState<'form' | 'express' | 'collection'>('express');
@@ -85,7 +104,24 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const handleExpressBrandChange = (value: string) => {
     setExpressBrand(value);
     const models = PRESET_BRANDS.find((b) => b.brand === value)?.models || [];
-    setExpressModel(models[0] || '');
+    const firstModel = models[0] || '';
+    setExpressModel(firstModel);
+    const metadata = curatedMetadataForModel(firstModel);
+    if (metadata?.years[0]) setExpressYear(String(metadata.years[0]));
+  };
+
+  const handleExpressModelChange = (model: string) => {
+    setExpressModel(model);
+    const metadata = curatedMetadataForModel(model);
+    if (!metadata) return;
+    setExpressBrand(metadata.brand);
+    if (metadata.years[0]) setExpressYear(String(metadata.years[0]));
+  };
+
+  const expressModelLabel = (model: string) => {
+    const metadata = curatedMetadataForModel(model);
+    if (!metadata) return model;
+    return `${metadata.title} — ${metadata.years.join('/')}`;
   };
 
   // Prévia ao vivo do Cadastro Rápido: mostra a descrição exata conforme Marca+Modelo+Ano.
@@ -172,6 +208,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   useEffect(() => {
     if (isAuthenticated) {
       refreshVehiclesList();
+      CustomVehicleService.syncWithSupabase().then(refreshVehiclesList);
     }
   }, [isAuthenticated, isOpen]);
 
@@ -243,24 +280,22 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   };
 
   // Upload de imagem: feito exclusivamente no momento de "Salvar Alterações".
-  const handleLogin = (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     playMechanicalClick('click');
-
-    if (username.trim() === 'admin' && password.trim() === 'senhorele2026') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('studio_admin_logged', 'true');
-      setAuthError('');
-    } else {
-      setAuthError('Usuário ou senha incorretos.');
+    setAuthSubmitting(true);
+    setAuthError('');
+    const error = await SupabaseService.signIn(username.trim(), password);
+    setAuthSubmitting(false);
+    if (error) {
+      setAuthError(error);
       playMechanicalClick('modal');
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     playMechanicalClick('click');
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('studio_admin_logged');
+    await SupabaseService.signOut();
   };
 
   const resetForm = () => {
@@ -521,7 +556,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
           {/* Body Content */}
           <main className="w-full max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12">
-            {!isAuthenticated ? (
+            {authLoading ? (
+              <div role="status" className="max-w-md mx-auto mt-[8vh] p-8 text-center text-on-surface-variant">
+                Verificando sessão segura…
+              </div>
+            ) : !isAuthenticated ? (
               /* LOGIN FORM */
               <form onSubmit={handleLogin} className="space-y-5 max-w-md mx-auto mt-[8vh] p-6 md:p-8 bg-surface-container-low rounded-2xl">
                 {authError && (
@@ -531,14 +570,14 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 )}
 
                 <div>
-                  <label htmlFor="admin-username" className="block font-label-caps text-xs text-parchment mb-1.5">Usuário</label>
+                  <label htmlFor="admin-username" className="block font-label-caps text-xs text-parchment mb-1.5">E-mail</label>
                   <input
                     id="admin-username"
-                    type="text"
+                    type="email"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Ex: admin"
+                    placeholder="seu@email.com"
                     className="w-full px-4 py-2.5 bg-surface-container border border-surface-variant/50 rounded-xl text-parchment text-sm focus:outline-none focus:border-secondary transition-colors"
                   />
                 </div>
@@ -558,14 +597,15 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
                 <button
                   type="submit"
+                  disabled={authSubmitting}
                   className="w-full bg-secondary hover:bg-amber-glow text-deep-charcoal font-label-caps font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer mt-4 flex items-center justify-center space-x-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">lock_open</span>
-                  <span>Entrar no Painel</span>
+                  <span>{authSubmitting ? 'Entrando…' : 'Entrar no Painel'}</span>
                 </button>
 
                 <p className="text-[11px] text-on-surface-variant/70 text-center font-mono pt-2">
-                  Dica Padrão: admin / senhorele2026
+                  Acesso protegido pelo Supabase Auth.
                 </p>
               </form>
             ) : (
@@ -674,16 +714,21 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                         <label className="block font-label-caps text-[11px] text-on-surface-variant mb-1">Modelo do Veículo *</label>
                         <select
                           value={expressModel}
-                          onChange={(e) => setExpressModel(e.target.value)}
+                          onChange={(e) => handleExpressModelChange(e.target.value)}
                           className="w-full px-3 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
                         >
                           {selectedBrandModels.length === 0 && (
                             <option value="">— Selecione a marca primeiro —</option>
                           )}
                           {selectedBrandModels.map((m) => (
-                            <option key={m} value={m}>{m}</option>
+                            <option key={m} value={m}>{expressModelLabel(m)}</option>
                           ))}
                         </select>
+                        {curatedMetadataForModel(expressModel) && (
+                          <p className="mt-1.5 text-[10px] text-secondary">
+                            Marca e ano preenchidos a partir do acervo.
+                          </p>
+                        )}
                       </div>
 
                       <div>

@@ -1,138 +1,255 @@
-# Product Requirement Document (PRD) — Studio SenhorEle
+# Product Requirements Document — Studio SenhorEle
 
-**Versão:** 2.0  
-**Status:** Implementado, Testado & Em Produção  
-**Plataforma Digital:** Studio SenhorEle — Curadoria & Preservação de Veículos Clássicos (VW Air-Cooled e Porsche)  
-**URL de Desenvolvimento:** `http://localhost:3000`
+**Versão:** 3.0
 
----
+**Última atualização:** 14 de agosto de 2026
 
-## 1. Visão Geral do Produto
+**Status:** Produto em produção, com evolução administrativa em validação
 
-O **Studio SenhorEle** é uma plataforma digital de alta sofisticação projetada para entusiastas, colecionadores e investidores internacionais de veículos clássicos, com foco especial na cultura **VW Air-Cooled** e modelos icônicos como **Porsche 911**, **VW Kombi Corujinha**, **VW Fusca Cal Style** e **Aero Willys**.
+**Produção:** https://studio-senhorele.vercel.app
 
-A aplicação combina uma estética visual atemporal (*Vintage Racing & Dark Luxury*) com interatividade moderna em React 18, oferecendo navegação por acervo 3D, suporte a **três idiomas (PT, EN, DE)**, integração automatizada com o **Feed do Instagram (@studiosenhorele)**, fichas técnicas detalhadas com proveniência histórica, botões de consulta direta via WhatsApp com mensagens pré-formatadas contendo IDs únicos, e feedback tátil por efeitos sonoros mecânicos.
+**Desenvolvimento:** http://localhost:3000
 
 ---
 
-## 2. Objetivos Estratégicos & Proposta de Valor
+## 1. Visão do produto
 
-1. **Posicionamento de Marca Premium:** Refletir o cuidado artesanal e o prestígio da curadoria do Studio SenhorEle através de design editorial refinado, tipografia clássica (*Libre Caslon Text* & *Hanken Grotesk*) e paleta em tons de âmbar, champanhe e verde corrida (*Racing Green*).
-2. **Internacionalização (i18n):** Suporte nativo em Português, Inglês e Alemão com seletor no Header (`🇧🇷 PT` · `🇺🇸 EN` · `🇩🇪 DE`) e gravação local em `localStorage`.
-3. **Curadoria Integrada ao Instagram:** Exibição elegante dos destaques do feed do Instagram da marca sem expor abertamente pretensões comerciais diretas, mantendo o tom velado de apreciação estética e histórico com conversão direta para o WhatsApp.
-4. **Descoberta & Filtragem Rápida:** Busca dinâmica em tempo real por palavras-chave, ano, modelo ou código de compartilhamento (Share ID / Instagram ID).
-5. **Conversão & Atendimento Multicanais:** Integração unificada via WhatsApp oficial ((11) 94725-1630), Instagram e formulários de agendamento presencial.
+O Studio SenhorEle é uma experiência digital de curadoria e preservação de veículos clássicos. O produto apresenta o acervo com linguagem editorial premium, fichas técnicas detalhadas e contato direto com a equipe, além de oferecer uma área administrativa para cadastrar, editar, ordenar e controlar a publicação dos veículos.
 
----
+O foco da experiência é combinar a atmosfera de automóveis clássicos — especialmente Volkswagen refrigerados a ar, Porsche e exemplares selecionados — com uma interface contemporânea, responsiva, acessível e discreta.
 
-## 3. Funcionalidades Principais & Arquitetura de Interface
+## 2. Objetivos
 
-### 3.1. Cabeçalho de Navegação & Seletor de Idiomas (Navigation & i18n)
-* **Barra Fixa Glassmorphism com Indicador de Progresso:** Linha superior animada em gradiente de ouro velho que reflete a rolagem da página.
-* **Seletor Minimalista de Idiomas (`LanguageSwitcher`):**
-  * `🇧🇷 PT` (Português - Padrão)
-  * `🇺🇸 EN` (Inglês)
-  * `🇩🇪 DE` (Alemão)
-  * Transições suaves em pill com Framer Motion e gravação automática em `localStorage`.
-* **Menu Responsivo & Feedback Sonoro:** Sons sutis de cliques mecânicos ao interagir com links e botões.
+- Fortalecer o posicionamento premium e a identidade visual do Studio SenhorEle.
+- Organizar o acervo em uma vitrine clara, responsiva e fácil de compartilhar.
+- Facilitar consultas por WhatsApp usando o veículo e seu código de referência.
+- Permitir que a equipe mantenha o acervo sem alterar código-fonte.
+- Controlar editorialmente quais veículos estão publicados, reservados, vendidos ou em preparação.
+- Persistir dados e imagens no Supabase com acesso administrativo protegido por autenticação e RLS.
 
-### 3.2. Apresentação Hero (Hero Section)
-* **Apresentação de Impacto Cinematográfico:** Imagem de fundo do Aero Willys 1967 com tratamento de iluminação dramática.
-* **Chamada para Ação Traduzida:** Título principal, subtítulo e indicador animado de rolagem ("Explorar / Explore / Entdecken").
+## 3. Públicos
 
-### 3.3. Seção Institucional ("Nossa História" & "Propósito")
-* **Linha do Tempo Editorial:** Relato da origem do Studio SenhorEle, a paixão introduzida pelo irmão José, o aprendizado com o Aero Willys 1967, a aproximação da oficina parceira Box 767 e o propósito da preservação atemporal.
+- Entusiastas e colecionadores de veículos clássicos.
+- Interessados em conhecer a história e as especificações dos exemplares.
+- Potenciais clientes que desejam conversar diretamente com a curadoria.
+- Curadores e administradores responsáveis pelo conteúdo do acervo.
 
-### 3.4. Acervo de Veículos & Feed do Instagram (`Collection.tsx`)
-* **Modos de Exibição:** Alternância instantânea entre **Grade 3D (Intersection Observer)** e **Carrossel 3D de Profundidade**.
-* **Chips de Filtro Dinâmicos:**
-  * `Todos` / `All` / `Alle`
-  * `VW Air-Cooled`
-  * `Porsche`
-  * `Kombi Corujinha` / `Split-Window Bus` / `VW T1 Bulli`
-  * `Fusca` / `Beetle` / `VW Käfer`
-  * `Aero Willys`
-  * `Feed Instagram` *(Integração automatizada de publicações do @studiosenhorele)*
-* **Cards Estilo Instagram (`InstagramCard.tsx`):**
-  * Topo com avatar da marca e identificador único (`#INSTA-911-73`).
-  * Foto no formato quadrado com selo de curtidas.
-  * Legenda e título da publicação.
-  * Botão de atalho para **Ver no Instagram** e botão de **Consulta via WhatsApp** com mensagem pré-configurada contendo o ID do post.
+## 4. Experiência pública
 
-### 3.5. Modal de Ficha Técnica Detalhada & Proveniência (`VehicleDetailModal.tsx`)
-* **Galeria & Ficha Técnica:** Especificações de Motor, Transmissão, Cor, Ano, Potência, Placa Preta e Matching Numbers.
-* **Histórico de Restauração em Passos:** Etapas numeradas da restauração *Nuts & Bolts*.
-* **Compartilhamento Social com ID Único:** Botão de cópia rápida do link com notificação Toast visual.
+### 4.1 Página principal
 
-### 3.6. Modal de Consulta & Agendamento (`InquireModal.tsx`)
-* **Formulário de Atendimento VIP:** Preenchimento de Nome, Telefone, E-mail, Veículo de Interesse e Mensagem personalizada com envio direto para o WhatsApp oficial da curadoria.
+- Apresentação cinematográfica da marca.
+- Conteúdo institucional e narrativa sobre a curadoria.
+- Navegação responsiva para desktop e celular.
+- Identidade visual dark luxury com verde discreto, superfícies escuras, âmbar pontual e tipografia editorial.
+- Respeito à preferência de movimento reduzido.
 
-### 3.7. Widget Flutuante de Contato (`FloatingContactWidget.tsx`)
-* **Botão Flutuante com Logotipo Oficial:** Menu expansível com atalhos para WhatsApp, Instagram `@studiosenhorele` e agendamento presencial.
+### 4.2 Acervo
 
----
+- Exibição dos veículos em grade e experiências de navegação visual.
+- Busca e filtros conforme os dados disponíveis.
+- Ordenação definida pelo administrador, sendo a primeira posição o destaque principal.
+- Atualização após alterações realizadas no painel administrativo.
+- Estados de carregamento, vazio e falha de sincronização.
 
-## 4. Arquitetura Técnica & Tecnologias
+### 4.3 Visibilidade por status
 
-| Camada | Tecnologia / Biblioteca | Função |
-| :--- | :--- | :--- |
-| **Frontend Core** | React 18 + TypeScript 5.8 | Estrutura e tipagem de dados estrita |
-| **Build & Dev Server** | Vite 6.4 | Bundling e Hot Module Replacement (HMR) ultra-rápido |
-| **Estilização** | Tailwind CSS v4 | Utilitários de layout, cores HSL e suporte a temas |
-| **Internacionalização** | Custom `LanguageContext` + JSON | Tradução leve em PT, EN, DE sem dependências pesadas |
-| **Animações & Interação** | Motion (`motion/react`) | Gestos, carrossel 3D e modais com aceleração por GPU |
-| **Integração de Feed** | `InstagramService` + Local Storage | Consumo de posts com cache de 30 min e fallback resiliente |
-| **Efeitos Sonoros** | Web Audio API / Audio Utilities | Efeitos de som para cliques mecânicos e aberturas de modal |
-| **Acessibilidade (a11y)** | `useAccessibleModal` | Trap de foco, fechamento por tecla ESC e atributos ARIA |
+| Status | Vitrine pública | Painel administrativo | Comportamento |
+| --- | --- | --- | --- |
+| `draft` | Não | Sim | Veículo em preparação |
+| `published` | Sim | Sim | Publicação normal |
+| `reserved` | Sim | Sim | Exibe selo “Reservado” |
+| `sold` | Não | Sim | Mantido no histórico administrativo |
 
----
+Registros legados sem status são interpretados como publicados para compatibilidade. Novos veículos começam como rascunho.
 
-## 5. Estrutura de Diretórios do Projeto
+### 4.4 Ficha do veículo
 
+- Galeria com até três imagens.
+- Ano, motor, transmissão, cor, potência, condição e descrição.
+- Conteúdo histórico e curiosidades quando disponíveis.
+- URL compartilhável baseada no identificador do veículo.
+- Visualização ampliada de imagens com navegação acessível.
+- Ação de contato pelo WhatsApp com nome e código do veículo preenchidos automaticamente.
+
+### 4.5 Contato
+
+- Atalhos para WhatsApp e Instagram.
+- Mensagens de WhatsApp pré-preenchidas com contexto do veículo.
+- Widget flutuante de contato.
+
+## 5. Área administrativa
+
+### 5.1 Acesso e navegação
+
+- Rota principal: `/admin`.
+- Compatibilidade: `?admin=true` redireciona para `/admin`.
+- Cabeçalho compacto e navegação entre Cadastro rápido, Formulário completo e Acervo.
+- Layout amplo no desktop e controles segmentados, confortáveis para toque, no celular.
+
+### 5.2 Autenticação
+
+O frontend está sendo migrado do login fixo local para Supabase Auth com e-mail e senha.
+
+Requisitos de segurança:
+
+- Sessão persistida e renovada pelo cliente oficial `@supabase/supabase-js`.
+- Logout encerra a sessão no Supabase.
+- A interface administrativa só aceita usuários cujo `app_metadata.role` seja `admin`.
+- Autorização no banco é aplicada por RLS; ocultar a interface não é considerado controle de segurança.
+- A chave pública/publishable pode existir no frontend; chaves secretas ou `service_role` nunca podem ser expostas.
+- `user_metadata` não deve ser usado para autorização.
+
+**Pendência de ativação:** criar ou promover o usuário administrativo no Supabase Auth, atribuir `app_metadata.role = "admin"`, aplicar a migration administrativa e validar o fluxo em produção. Até essa etapa ser concluída, a nova autenticação não deve ser considerada operacional em produção.
+
+### 5.3 Cadastro rápido
+
+- Aba aberta por padrão.
+- Entrada por marca, modelo e ano.
+- Modelos conhecidos pelo acervo exibem marca e ano no próprio seletor.
+- Ao selecionar um modelo curado, marca e ano são preenchidos automaticamente quando os dados forem inequívocos.
+- Geração de título, apresentação, especificações e contexto histórico com base na versão e no período.
+- Prévia antes da gravação.
+- Novo registro inicia como rascunho.
+
+### 5.4 Formulário completo
+
+- Criação e edição de todos os campos existentes de `CustomVehicle`.
+- Seleção de status.
+- Upload de até três imagens.
+- Validação de campos obrigatórios.
+- Indicação clara de salvamento, sucesso, erro e falha de upload.
+- Após salvar, atualização do acervo e ação para visualizar o veículo no site.
+
+### 5.5 Acervo administrativo
+
+- Busca por nome, código ou ano.
+- Filtros combináveis por marca, ano e status.
+- Contagem de resultados e limpeza dos filtros.
+- Selo e alteração rápida de status em cada item.
+- Edição e exclusão.
+- Reordenação por arrastar no desktop.
+- Controles acessíveis para mover itens no celular sem depender de arrastar.
+
+### 5.6 Exclusão segura
+
+- Confirmação visual personalizada com nome, imagem e aviso.
+- Ações “Cancelar” e “Excluir veículo”.
+- Captura de foco, fechamento por `Esc` e devolução do foco ao acionador.
+- Notificação com opção “Desfazer” durante oito segundos.
+- Restauração de dados, status e posição durante o prazo.
+- Exclusão e restauração sincronizadas com o Supabase.
+
+## 6. Dados e persistência
+
+### 6.1 Modelo principal
+
+O formato `CustomVehicle` permanece como contrato principal. Ele inclui identificação, código compartilhável, conteúdo editorial, imagens, ficha técnica e status:
+
+```ts
+type VehicleStatus = 'draft' | 'published' | 'reserved' | 'sold';
 ```
-Studio_senhorEle_website/
-├── public/
-│   └── assets/images/              # Imagens dos veículos e logotipo oficial
-├── src/
-│   ├── components/                 # Componentes da interface
-│   │   ├── About.tsx               # Seção institucional
-│   │   ├── Collection.tsx          # Acervo 3D e filtros
-│   │   ├── CustomCursor.tsx        # Cursor vintage customizado
-│   │   ├── FloatingContactWidget.tsx # Widget flutuante de atendimento
-│   │   ├── Footer.tsx              # Rodapé institucional
-│   │   ├── Hero.tsx                # Capa cinematográfica
-│   │   ├── InquireModal.tsx        # Modal de agendamento/consulta
-│   │   ├── InstagramCard.tsx       # Cards do feed do Instagram
-│   │   ├── LanguageSwitcher.tsx    # Seletor de idiomas PT/EN/DE
-│   │   ├── Navigation.tsx          # Header glassmorphism
-│   │   └── VehicleDetailModal.tsx  # Ficha técnica e história
-│   ├── data/
-│   │   └── instagramPosts.ts       # Dataset de posts do Instagram
-│   ├── hooks/
-│   │   └── useAccessibleModal.ts   # Hook de acessibilidade para modais
-│   ├── i18n/
-│   │   ├── LanguageContext.tsx     # Contexto e Provider de idiomas
-│   │   └── translations.ts         # Dicionário de traduções (PT, EN, DE)
-│   ├── services/
-│   │   └── instagramService.ts     # Serviço de busca e cache do Instagram
-│   ├── utils/
-│   │   └── audio.ts                # Utilitários de áudio mecânico
-│   ├── App.tsx                     # Componente raiz da aplicação
-│   ├── main.tsx                    # Ponto de entrada React
-│   └── index.css                   # Configuração de temas e variáveis CSS
-├── prd.md                          # Este documento (PRD v2.0)
-└── package.json                    # Dependências e scripts do projeto
-```
+
+Não fazem parte desta versão: lixeira permanente, histórico de alterações, múltiplos estados comerciais adicionais ou mudança estrutural ampla do modelo.
+
+### 6.2 Supabase
+
+- Tabela: `public.custom_vehicles`.
+- Storage: bucket público `vehicle-images`, com escrita administrativa protegida.
+- Registros antigos recebem `published` por backfill.
+- Coluna `status` possui `NOT NULL`, default `draft` e restrição aos quatro valores válidos.
+- Visitantes anônimos podem consultar somente `published` e `reserved`.
+- Escritas anônimas são proibidas.
+- Usuários autenticados somente podem administrar quando o JWT contém `app_metadata.role = "admin"`.
+- Upload, substituição e exclusão de imagens devem seguir políticas equivalentes no `storage.objects`.
+
+### 6.3 Compatibilidade local
+
+O armazenamento local continua servindo como tolerância temporária e compatibilidade durante a migração. Com Supabase Auth plenamente ativado, o banco deve ser a fonte compartilhada de verdade para alterações entre navegadores e dispositivos. Dados locais não devem sobrescrever silenciosamente versões remotas mais recentes.
+
+## 7. Arquitetura técnica
+
+| Camada | Tecnologia | Responsabilidade |
+| --- | --- | --- |
+| Frontend | React 19 + TypeScript 5.8 | Interface, componentes e tipagem |
+| Build | Vite 6 | Desenvolvimento e geração do bundle |
+| Estilos | Tailwind CSS 4 | Layout, responsividade e design tokens |
+| Movimento | Motion | Transições e interações |
+| Backend | Supabase | Postgres, Auth, Storage e API de dados |
+| Segurança | Supabase Auth + PostgreSQL RLS | Autenticação e autorização |
+| Hospedagem | Vercel | Deploy da aplicação pública |
+| Acessibilidade | `useAccessibleModal` e HTML semântico | Foco, teclado, ARIA e diálogos |
+
+O painel administrativo e os modais de detalhes são carregados com `React.lazy` e `Suspense` para reduzir o carregamento inicial. Dados detalhados associados a URLs devem ser carregados sob demanda.
+
+## 8. Requisitos não funcionais
+
+### Segurança
+
+- RLS habilitado e forçado na tabela pública de veículos.
+- Nenhuma escrita permitida ao papel `anon`.
+- Autorização administrativa baseada em `app_metadata`, controlado pelo servidor.
+- Nenhum segredo administrativo armazenado no código, bundle ou repositório.
+- Políticas e advisors do Supabase revisados após cada migration.
+
+### Acessibilidade
+
+- Navegação integral por teclado.
+- Foco visível.
+- Rótulos associados aos controles.
+- Modais com foco capturado e fechamento por `Esc`.
+- Contraste compatível com WCAG AA nas ações essenciais.
+- Suporte a `prefers-reduced-motion`.
+
+### Responsividade
+
+- Suporte mínimo a telas móveis de 320 px.
+- Controles com área confortável para toque.
+- Dashboard adaptável sem perda de funcionalidades.
+
+### Performance
+
+- Admin e modais fora do bundle inicial.
+- Imagens e dados detalhados carregados sob demanda quando possível.
+- Build sem erros TypeScript.
+- Monitoramento contínuo do tamanho do chunk principal.
+
+### Resiliência
+
+- Estados explícitos de loading, sucesso, vazio e erro.
+- Erros de sincronização não podem ser apresentados como sucesso definitivo.
+- Alterações administrativas devem ser confirmadas pelo Supabase antes de serem consideradas persistidas entre dispositivos.
+
+## 9. Critérios de aceite da próxima entrega
+
+- Usuário administrativo real criado no Supabase Auth.
+- Claim `app_metadata.role = "admin"` configurada pelo servidor.
+- Migration de políticas administrativas aplicada sem findings críticos no Security Advisor.
+- Login e logout validados localmente e em produção.
+- Usuário comum autenticado não consegue visualizar rascunhos nem executar escritas.
+- Visitante anônimo lê somente publicados e reservados.
+- Cadastro, edição, alteração de status, upload, exclusão e desfazer persistem após recarregar e em outro navegador.
+- Mudanças aparecem imediatamente na vitrine conforme as regras de status.
+- `npm run lint` e `npm run build` concluídos sem erros.
+
+## 10. Fora do escopo atual
+
+- Cadastro público de usuários.
+- Recuperação de senha personalizada dentro do site.
+- MFA obrigatório.
+- Papéis administrativos múltiplos.
+- Workflow de aprovação com auditoria.
+- Lixeira permanente e histórico de versões.
+- Migração estrutural ampla do modelo de veículos.
+
+## 11. Roadmap recomendado
+
+1. Concluir a ativação do Supabase Auth e validar RLS ponta a ponta.
+2. Tornar o Supabase a fonte de verdade e apresentar falhas de persistência no admin.
+3. Adicionar recuperação segura de senha e, posteriormente, MFA para administradores.
+4. Implementar auditoria de alterações e histórico de status.
+5. Continuar a otimização do bundle inicial e das imagens.
 
 ---
 
-## 6. Requisitos Não-Funcionais
-
-1. **Performance:** Carregamento inicial sob 1.5s, animações rodando a 60 FPS estáveis.
-2. **Disponibilidade 100%:** Fallback automático de dados para garantir que a plataforma continue funcionando perfeitamente mesmo sem conexão externa.
-3. **Contraste & Acessibilidade:** Conformidade WCAG AA com navegação via teclado (Setas Esquerda/Direita para o carrossel, ESC para fechar modais) e rótulos `aria-label`.
-4. **Responsividade:** Layout responsivo completo testado em telas de 320px até ultrawide 4K.
-
----
-
-*Documento atualizado e mantido pela equipe de engenharia do Studio SenhorEle.*
+Este documento descreve o estado funcional conhecido do projeto e as condições necessárias para considerar a administração segura em produção.

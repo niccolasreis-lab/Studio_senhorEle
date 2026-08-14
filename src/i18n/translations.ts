@@ -8,8 +8,6 @@ export interface Translations {
     inquire: string;
   };
   hero: {
-    title: string;
-    subtitle: string;
     explore: string;
   };
   about: {
@@ -58,6 +56,8 @@ export interface Translations {
     carouselHint: string;
     viewDetails: string;
     shareId: string;
+    share: string;
+    copied: string;
     noResultsTitle: string;
     noResultsText: string;
   };
@@ -65,6 +65,8 @@ export interface Translations {
     viewPost: string;
     inquirePost: string;
     badge: string;
+    sharePost: string;
+    linkCopied: string;
   };
   inquire: {
     title: string;
@@ -133,11 +135,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Coleção',
       about: 'Nossa História',
       purpose: 'Propósito',
-      inquire: 'Contato',
+      inquire: 'Conversar sobre o acervo',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'Uma coleção de clássicos VW Air Cooled e Porsche — restauração, preparação e paixão por veículos antigos.',
       explore: 'EXPLORAR',
     },
     about: {
@@ -185,6 +185,8 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Use as setas do teclado ou deslize para navegar pelo acervo 3D',
       viewDetails: 'Ver Ficha Técnica',
       shareId: 'CÓDIGO',
+      share: 'Compartilhar',
+      copied: 'Link copiado!',
       noResultsTitle: 'Nenhum clássico encontrado',
       noResultsText: 'Tente ajustar os termos de busca ou selecionar outro filtro acima.',
     },
@@ -192,6 +194,8 @@ export const translations: Record<Language, Translations> = {
       viewPost: 'Ver no Instagram',
       inquirePost: 'Consultar via WhatsApp',
       badge: 'Destaque Instagram',
+      sharePost: 'Compartilhar',
+      linkCopied: 'Link copiado!',
     },
     inquire: {
       title: 'Entrar em Contato',
@@ -243,10 +247,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Curadoria especializada em clássicos automotivos VW Air-Cooled e Porsche. Preservando histórias e movendo paixões.',
       navigationTitle: 'Navegação',
-      contactTitle: 'Contato & Localização',
+      contactTitle: 'Conversas sobre o acervo',
       hoursTitle: 'Atendimento',
       hoursText: 'Segunda a Sexta: 09h às 18h',
-      rights: 'Todos os direitos reservados. Studio SenhorEle.',
+      rights: 'Todos os direitos reservados.',
     },
     floating: {
       whatsapp: 'WhatsApp Curadoria',
@@ -258,11 +262,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Collection',
       about: 'Our Story',
       purpose: 'Purpose',
-      inquire: 'Contact',
+      inquire: 'Talk about the collection',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'A curated collection of classic VW Air-Cooled & Porsche models — restoration, performance & automotive passion.',
       explore: 'EXPLORE',
     },
     about: {
@@ -310,13 +312,17 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Use keyboard arrow keys or swipe to navigate the 3D collection',
       viewDetails: 'View Specifications',
       shareId: 'SHARE ID',
+      share: 'Share',
+      copied: 'Link copied!',
       noResultsTitle: 'No classic vehicles found',
       noResultsText: 'Try adjusting your search query or selecting a different filter above.',
     },
     instagramCard: {
       viewPost: 'View on Instagram',
-      inquirePost: 'Inquire on WhatsApp',
+      inquirePost: 'Ask via WhatsApp',
       badge: 'Instagram Highlight',
+      sharePost: 'Share',
+      linkCopied: 'Link copied!',
     },
     inquire: {
       title: 'Contact Us',
@@ -368,10 +374,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Specialized curation of classic VW Air-Cooled and Porsche vehicles. Preserving history and moving passion.',
       navigationTitle: 'Navigation',
-      contactTitle: 'Contact & Location',
+      contactTitle: 'Collection conversations',
       hoursTitle: 'Opening Hours',
       hoursText: 'Monday to Friday: 09:00 - 18:00',
-      rights: 'All rights reserved. Studio SenhorEle.',
+      rights: 'All rights reserved.',
     },
     floating: {
       whatsapp: 'WhatsApp Curation',
@@ -383,11 +389,9 @@ export const translations: Record<Language, Translations> = {
       collection: 'Kollektion',
       about: 'Über uns',
       purpose: 'Philosophie',
-      inquire: 'Kontakt',
+      inquire: 'Über die Sammlung sprechen',
     },
     hero: {
-      title: 'Studio SenhorEle',
-      subtitle: 'Eine exklusive Sammlung von VW Luftgekühlt & Porsche Klassikern — Restaurierung, Performance & Leidenschaft.',
       explore: 'ENTDECKEN',
     },
     about: {
@@ -435,13 +439,17 @@ export const translations: Record<Language, Translations> = {
       carouselHint: 'Nutzen Sie die Pfeiltasten oder Wischen zur Navigation in der 3D-Galerie',
       viewDetails: 'Technische Daten',
       shareId: 'SHARE-ID',
+      share: 'Teilen',
+      copied: 'Link kopiert!',
       noResultsTitle: 'Keine Klassiker gefunden',
       noResultsText: 'Bitte passen Sie Ihre Suchanfrage oder den gewählten Filter an.',
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',
       inquirePost: 'Über WhatsApp anfragen',
-      badge: 'Instagram Highlight',
+      badge: 'Instagram-Highlight',
+      sharePost: 'Teilen',
+      linkCopied: 'Link kopiert!',
     },
     inquire: {
       title: 'Kontakt aufnehmen',
@@ -493,10 +501,10 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Spezialisierte Kuratierung von VW Luftgekühlt- und Porsche-Klassikern. Geschichte bewahren und Leidenschaft bewegen.',
       navigationTitle: 'Navigation',
-      contactTitle: 'Kontakt & Standort',
+      contactTitle: 'Gespräche über die Sammlung',
       hoursTitle: 'Öffnungszeiten',
       hoursText: 'Montag bis Freitag: 09:00 - 18:00 Uhr',
-      rights: 'Alle Rechte vorbehalten. Studio SenhorEle.',
+      rights: 'Alle Rechte vorbehalten.',
     },
     floating: {
       whatsapp: 'WhatsApp Beratung',

@@ -142,6 +142,7 @@ export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
 
 const STORAGE_KEY = 'studio_custom_vehicles';
 const DELETED_IDS_KEY = 'studio_deleted_vehicle_ids';
+const CLOUD_SYNCED_KEY = 'studio_custom_vehicles_cloud_synced';
 // Ordem de exibição definida pelo admin (array de ids). Persistida à parte para
 // sobreviver à "sync" com o Supabase (que apenas recria o merge base + custom).
 const ORDER_KEY = 'studio_custom_vehicle_order';
@@ -177,7 +178,27 @@ export const CustomVehicleService = {
         : [];
       const deletedIds = this.getDeletedIds();
 
-      // Merge base vehicle collection with custom list (custom entries override base defaults)
+      // Após uma sincronização válida, a lista retornada pelo Supabase é a
+      // fonte de verdade. O RLS omite rascunhos e vendidos da resposta pública;
+      // recriar defaults ausentes faria esses veículos reaparecerem publicados.
+      if (localStorage.getItem(CLOUD_SYNCED_KEY) === 'true') {
+        const cloudSnapshot = customList.filter((vehicle) => !deletedIds.includes(vehicle.id));
+        const order = this.getOrderedIds();
+        if (order.length === 0) return cloudSnapshot;
+        const byId = new Map(cloudSnapshot.map((vehicle) => [vehicle.id, vehicle]));
+        const ordered: CustomVehicle[] = [];
+        order.forEach((id) => {
+          const vehicle = byId.get(id);
+          if (vehicle) {
+            ordered.push(vehicle);
+            byId.delete(id);
+          }
+        });
+        byId.forEach((vehicle) => ordered.push(vehicle));
+        return ordered;
+      }
+
+      // Antes da primeira sincronização, usa a coleção embutida como fallback.
       const map = new Map<string, CustomVehicle>();
       
       INITIAL_DEFAULT_VEHICLES.forEach((v) => {
@@ -232,20 +253,15 @@ export const CustomVehicleService = {
   async syncWithSupabase(): Promise<CustomVehicle[]> {
     try {
       const supabaseVehicles = await SupabaseService.fetchVehicles();
-      if (supabaseVehicles.length > 0) {
-        const local = this.getCustomVehicles();
-        const map = new Map<string, CustomVehicle>();
-        local.forEach((v) => map.set(v.id, v));
-        supabaseVehicles.forEach((v) => map.set(v.id, v));
-        
-        const merged = Array.from(map.values());
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      if (supabaseVehicles !== null) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(supabaseVehicles));
+        localStorage.setItem(CLOUD_SYNCED_KEY, 'true');
         
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated'));
         }
 
-        return merged;
+        return this.getCustomVehicles();
       }
     } catch (e) {
       console.warn('Supabase sync notice:', e);

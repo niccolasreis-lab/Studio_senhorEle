@@ -5,6 +5,7 @@ import { InstagramService } from '../services/instagramService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { playMechanicalClick } from '../utils/audio';
 import { use3DTilt } from '../hooks/use3DTilt';
+import { buildShareUrl } from '../utils/share';
 
 interface InstagramCardProps {
   key?: React.Key;
@@ -15,8 +16,35 @@ interface InstagramCardProps {
 
 export default function InstagramCard({ post, index }: InstagramCardProps) {
   const { t } = useLanguage();
+  const [copied, setCopied] = React.useState(false);
   const whatsappUrl = InstagramService.generateWhatsAppLink(post);
   const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
+
+  const handleShare = async () => {
+    playMechanicalClick('click');
+    const shareUrl = buildShareUrl(post.shareId);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: post.caption,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if share was dismissed or unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt('URL:', shareUrl);
+    }
+  };
 
   return (
     <div ref={tiltRef} {...tiltProps} className="relative rounded-2xl h-full">
@@ -84,8 +112,17 @@ export default function InstagramCard({ post, index }: InstagramCardProps) {
         </div>
       </div>
 
-      {/* Action Area - Focused Exclusively on WhatsApp Conversion */}
-      <div className="p-4 pt-2 border-t border-surface-variant/30 mt-auto">
+      {/* Action Area - WhatsApp Conversion + Share */}
+      <div className="p-4 pt-2 border-t border-surface-variant/30 mt-auto space-y-2">
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={handleShare}
+          className="w-full bg-surface-container-high/60 hover:bg-surface-container-high text-on-surface-variant hover:text-parchment border border-surface-variant/40 font-label-caps text-xs py-2.5 px-4 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center space-x-2 font-bold"
+        >
+          <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'link'}</span>
+          <span>{copied ? t.instagramCard.linkCopied : t.instagramCard.sharePost}</span>
+        </motion.button>
         <motion.a
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

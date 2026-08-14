@@ -6,6 +6,7 @@ import { Translations } from '../i18n/translations';
 import { use3DTilt } from '../hooks/use3DTilt';
 import { CustomVehicleService, VehicleStatus } from '../services/customVehicleService';
 import { buildWhatsAppLink } from '../config/contact';
+import { buildShareUrl } from '../utils/share';
 
 interface CarItem {
   id: string;
@@ -42,8 +43,36 @@ function IntersectionObserverGridCard({
 }: IntersectionObserverGridCardProps) {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
+
+  const handleShare = async () => {
+    playMechanicalClick('click');
+    const shareUrl = buildShareUrl(item.shareId);
+    const shareText = `Confira este clássico no Studio Senhorele: ${item.title} (#${item.shareId})`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: item.title,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if share was dismissed or unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt('URL:', shareUrl);
+    }
+  };
 
   useEffect(() => {
     const element = cardRef.current;
@@ -198,6 +227,16 @@ function IntersectionObserverGridCard({
             <span>{t.collection.viewDetails}</span>
           </button>
 
+          <button
+            type="button"
+            onClick={handleShare}
+            className="text-xs font-label-caps text-on-surface-variant hover:text-parchment transition-colors flex items-center space-x-1 cursor-pointer"
+            title={t.collection.share}
+          >
+            <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'link'}</span>
+            <span>{copied ? t.collection.copied : t.collection.share}</span>
+          </button>
+
           <a
             href={buildWhatsAppLink(`Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${item.title} (#${item.shareId})`)}
             target="_blank"
@@ -223,6 +262,34 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
   const [selectedTagKey, setSelectedTagKey] = useState<keyof Translations['collection']['filters']>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('grid');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
+
+  const handleShareCarousel = async (item: CarItem) => {
+    playMechanicalClick('click');
+    const shareUrl = buildShareUrl(item.shareId);
+    const shareText = `Confira este clássico no Studio Senhorele: ${item.title} (#${item.shareId})`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: item.title,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if share was dismissed or unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setCopiedShareId(item.shareId);
+      setTimeout(() => setCopiedShareId(null), 2500);
+    } catch {
+      window.prompt('URL:', shareUrl);
+    }
+  };
 
   const filterTagKeys: (keyof Translations['collection']['filters'])[] = [
     'all',
@@ -640,9 +707,22 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
 
                     {isCenter && (
                       <div className="flex justify-between items-center pt-2 relative">
-                        <span className="text-xs text-on-surface-variant font-label-caps group-hover:text-parchment transition-colors">
-                          Ver Ficha Técnica & História
-                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareCarousel(item);
+                          }}
+                          className="text-xs text-on-surface-variant font-label-caps group-hover:text-parchment transition-colors cursor-pointer flex items-center space-x-1"
+                          title={t.collection.share}
+                        >
+                          <span className="material-symbols-outlined text-[14px] text-secondary">
+                            {copiedShareId === item.shareId ? 'check' : 'link'}
+                          </span>
+                          <span>
+                            {copiedShareId === item.shareId ? t.collection.copied : t.collection.share}
+                          </span>
+                        </button>
                         <div className="relative group/btn">
                           <span className="material-symbols-outlined text-secondary text-[20px] group-hover:translate-x-1 transition-transform">
                             info
