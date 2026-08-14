@@ -276,7 +276,10 @@ async function findCustomVehicle(id: string, origin: string): Promise<ShareItemR
 const renderPage = (result: ShareItemResult, origin: string): string => {
   const title = escapeHtml(result.title);
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
-  const image = absolutize(result.image || DEFAULT_IMAGE, origin);
+  const sourceImage = absolutize(result.image || DEFAULT_IMAGE, origin);
+  const image = result.kind === 'vehicle'
+    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=2`
+    : sourceImage;
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
   const tag = result.kind === 'vehicle' ? 'Veículo' : 'Post';
   const isInstagram = result.kind === 'instagram';
@@ -308,6 +311,7 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
   <meta property="og:description" content="${description}" />
   <meta property="og:url" content="${shareUrl}" />
   <meta property="og:image" content="${image}" />
+  <meta property="og:image:secure_url" content="${image}" />
   <meta property="og:image:alt" content="${title}" />
 
   <meta name="twitter:card" content="summary_large_image" />
