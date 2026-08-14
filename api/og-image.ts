@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
 type Handler = (req: any, res: any) => Promise<void> | void;
 
@@ -45,12 +46,18 @@ const handler: Handler = async (req, res) => {
     });
     if (!upstream.ok) throw new Error(`Storage returned ${upstream.status}`);
 
-    const body = Buffer.from(await upstream.arrayBuffer());
+    const source = Buffer.from(await upstream.arrayBuffer());
+    const body = await sharp(source)
+      .rotate()
+      .resize(1200, 630, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 82, progressive: true, chromaSubsampling: '4:2:0' })
+      .toBuffer();
+
     res.statusCode = 200;
-    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/jpeg');
+    res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Content-Length', String(body.length));
     res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, immutable');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
     res.setHeader('X-Robots-Tag', 'all');
     res.end(body);
   } catch (error) {

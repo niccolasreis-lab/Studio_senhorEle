@@ -278,8 +278,9 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
   const sourceImage = absolutize(result.image || DEFAULT_IMAGE, origin);
   const image = result.kind === 'vehicle'
-    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=2`
+    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=3`
     : sourceImage;
+  const imageAttribute = escapeHtml(image);
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
   const tag = result.kind === 'vehicle' ? 'Veículo' : 'Post';
   const isInstagram = result.kind === 'instagram';
@@ -310,14 +311,17 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:url" content="${shareUrl}" />
-  <meta property="og:image" content="${image}" />
-  <meta property="og:image:secure_url" content="${image}" />
+  <meta property="og:image" content="${imageAttribute}" />
+  <meta property="og:image:secure_url" content="${imageAttribute}" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${title}" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />
+  <meta name="twitter:image" content="${imageAttribute}" />
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -378,7 +382,7 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
 </head>
 <body>
   <main class="card">
-    <img class="cover" src="${image}" alt="${title}" />
+    <img class="cover" src="${imageAttribute}" alt="${title}" />
     <div class="body">
       <span class="tag">${tag}${contentHtml}</span>
       <h1>${title}</h1>
