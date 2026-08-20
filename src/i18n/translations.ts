@@ -123,10 +123,6 @@ export interface Translations {
     hoursText: string;
     rights: string;
   };
-  floating: {
-    whatsapp: string;
-    inquire: string;
-  };
 }
 
 export const translations: Record<Language, Translations> = {
@@ -135,7 +131,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Coleção',
       about: 'Nossa História',
       purpose: 'Propósito',
-      inquire: 'Conversar sobre o acervo',
+      inquire: 'Contato',
     },
     hero: {
       explore: 'EXPLORAR',
@@ -252,17 +248,13 @@ export const translations: Record<Language, Translations> = {
       hoursText: 'Segunda a Sexta: 09h às 18h',
       rights: 'Todos os direitos reservados.',
     },
-    floating: {
-      whatsapp: 'WhatsApp Curadoria',
-      inquire: 'Enviar Mensagem',
-    },
   },
   en: {
     nav: {
       collection: 'Collection',
       about: 'Our Story',
       purpose: 'Purpose',
-      inquire: 'Talk about the collection',
+      inquire: 'Contact',
     },
     hero: {
       explore: 'EXPLORE',
@@ -379,17 +371,13 @@ export const translations: Record<Language, Translations> = {
       hoursText: 'Monday to Friday: 09:00 - 18:00',
       rights: 'All rights reserved.',
     },
-    floating: {
-      whatsapp: 'WhatsApp Curation',
-      inquire: 'Send Message',
-    },
   },
   de: {
     nav: {
       collection: 'Kollektion',
       about: 'Über uns',
       purpose: 'Philosophie',
-      inquire: 'Über die Sammlung sprechen',
+      inquire: 'Kontakt',
     },
     hero: {
       explore: 'ENTDECKEN',
@@ -505,10 +493,6 @@ export const translations: Record<Language, Translations> = {
       hoursTitle: 'Öffnungszeiten',
       hoursText: 'Montag bis Freitag: 09:00 - 18:00 Uhr',
       rights: 'Alle Rechte vorbehalten.',
-    },
-    floating: {
-      whatsapp: 'WhatsApp Beratung',
-      inquire: 'Nachricht Senden',
     },
   },
 };

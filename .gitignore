@@ -10,3 +10,17 @@ impeccable/
 .vercel
 AF_LOGO Sr L_RGB.png
 
+# Tooling / agent artifacts
+.agents/
+.claude/
+workspace/
+skills-lock.json
+
+# Supabase local temp (may contain project refs / connection strings)
+supabase/.temp/
+
+# Large root media (deployed copies live in public/assets/)
+GERE_UM_VIDEO_USANDO_IMAGEM_202607300818.mp4
+senhorele.jpeg
+logotipo_nexareis.png
+

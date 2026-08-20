@@ -56,13 +56,44 @@ const absolutize = (url: string, origin: string): string => {
   return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
-const renderFromSource = async (res: any, sourceUrl: string): Promise<void> => {
-  const upstream = await fetch(sourceUrl, {
-    headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*' },
-  });
-  if (!upstream.ok) throw new Error(`Source returned ${upstream.status}`);
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 10000;
 
-  const source = Buffer.from(await upstream.arrayBuffer());
+const renderFromSource = async (res: any, sourceUrl: string): Promise<void> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(sourceUrl, {
+      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*' },
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    clearTimeout(timeout);
+    if (err?.name === 'AbortError') throw new Error('Source fetch timed out');
+    throw err;
+  }
+  clearTimeout(timeout);
+
+  if (!upstream.ok) throw new Error(`Source returned ${upstream.status}`);
+  if (!upstream.body) throw new Error('Source returned no body');
+
+  const reader = upstream.body.getReader();
+  const chunks: Buffer[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.byteLength;
+    if (received > MAX_IMAGE_BYTES) {
+      await reader.cancel();
+      throw new Error(`Source exceeds ${MAX_IMAGE_BYTES} bytes limit`);
+    }
+    chunks.push(Buffer.from(value));
+  }
+
+  const source = Buffer.concat(chunks);
   const body = await sharp(source)
     .rotate()
     .resize(1200, 630, { fit: 'cover', position: 'centre' })
