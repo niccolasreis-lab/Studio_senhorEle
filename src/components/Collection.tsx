@@ -267,8 +267,6 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
     'porsche',
     'corujinha',
     'fusca',
-    'willys',
-    'aircooled',
   ];
 
   const [customVehicles, setCustomVehicles] = useState<CarItem[]>(() =>
@@ -334,10 +332,8 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
       selectedTagKey === 'all' || 
       item.title.toLowerCase().includes(currentFilterLabel) || 
       item.subtitle.toLowerCase().includes(currentFilterLabel) ||
-      (selectedTagKey === 'aircooled' && (item.title.toLowerCase().includes('air cooled') || item.subtitle.toLowerCase().includes('air cooled') || item.engine?.toLowerCase().includes('air cooled'))) ||
       (selectedTagKey === 'corujinha' && item.title.toLowerCase().includes('kombi')) ||
-      (selectedTagKey === 'fusca' && item.title.toLowerCase().includes('fusca')) ||
-      (selectedTagKey === 'willys' && item.title.toLowerCase().includes('willys'));
+      (selectedTagKey === 'fusca' && item.title.toLowerCase().includes('fusca'));
 
     const matchesQuery =
       query === '' ||
