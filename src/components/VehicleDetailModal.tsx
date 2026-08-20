@@ -326,7 +326,6 @@ export default function VehicleDetailModal({
   if (!vehicle) return null;
 
   const vehicleShareUrl = buildShareUrl(vehicle.shareId);
-  const vehicleImageUrl = new URL(vehicle.image, window.location.origin).href;
 
   const handleShare = async () => {
     playMechanicalClick('click');
@@ -676,10 +675,9 @@ export default function VehicleDetailModal({
                 whileTap={{ scale: 0.96 }}
                 transition={{ duration: 0.15 }}
                 href={buildWhatsAppLink([
-                  `Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${vehicle.title} (#${vehicle.shareId}).`,
+                  `Olá, StudioSRL! Gostaria de mais informações sobre o veículo: ${vehicle.title} (#${vehicle.shareId}).`,
                   '',
                   `Link do veículo: ${vehicleShareUrl}`,
-                  `Imagem: ${vehicleImageUrl}`,
                 ].join('\n'))}
                 target="_blank"
                 rel="noopener noreferrer"

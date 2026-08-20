@@ -50,7 +50,7 @@ function IntersectionObserverGridCard({
     playMechanicalClick('click');
     const shareUrl = buildShareUrl(item.shareId);
     const message = [
-      `Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${item.title} (#${item.shareId}).`,
+      `Olá, StudioSRL! Gostaria de mais informações sobre o veículo: ${item.title} (#${item.shareId}).`,
       '',
       `Link do veículo: ${shareUrl}`,
     ].join('\n');
