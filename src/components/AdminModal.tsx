@@ -156,6 +156,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [savedShareId, setSavedShareId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [statusPromptOpen, setStatusPromptOpen] = useState(false);
   // Histórico/curiosidades gerados pelo Cadastro Rápido (persistidos junto ao veículo)
   const [generatedHistory, setGeneratedHistory] = useState<string[]>([]);
   const [generatedCuriosities, setGeneratedCuriosities] = useState<string[]>([]);
@@ -204,6 +205,9 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
   const closeDeleteDialog = useCallback(() => setDeleteCandidate(null), []);
   const deleteDialogRef = useAccessibleModal<HTMLDivElement>(Boolean(deleteCandidate), closeDeleteDialog);
+
+  const closeStatusPrompt = useCallback(() => setStatusPromptOpen(false), []);
+  const statusDialogRef = useAccessibleModal<HTMLDivElement>(statusPromptOpen, closeStatusPrompt);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -367,7 +371,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   // Submit Add or Update Vehicle — upload único de todas as imagens pendentes
   // e depois salva. Um único botão lida com incluir/editar/excluir imagens e
   // com a descrição.
-  const handleSubmitVehicle = async (e: FormEvent) => {
+  const handleSubmitVehicle = (e: FormEvent) => {
     e.preventDefault();
     playMechanicalClick('click');
 
@@ -376,6 +380,16 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       return;
     }
 
+    setStatusPromptOpen(true);
+  };
+
+  const confirmSaveWithStatus = (status: VehicleStatus) => {
+    setVehicleStatus(status);
+    setStatusPromptOpen(false);
+    void performSave(status);
+  };
+
+  const performSave = async (status: VehicleStatus) => {
     setSaving(true);
     setSaveError('');
 
@@ -409,7 +423,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           color: color.trim(),
           power: power.trim(),
           description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
-          status: vehicleStatus,
+          status,
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
@@ -428,7 +442,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           color: color.trim(),
           power: power.trim(),
           description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
-          status: vehicleStatus,
+          status,
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
@@ -1228,6 +1242,41 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
             )}
           </main>
         </motion.div>
+
+        {statusPromptOpen && (
+          <div className="fixed inset-0 z-50 grid place-items-center p-5 bg-background/80" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeStatusPrompt(); }}>
+            <motion.div ref={statusDialogRef} role="dialog" aria-modal="true" aria-labelledby="status-title" initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-md rounded-2xl bg-surface-container-low p-6 shadow-2xl">
+              <div className="flex gap-4 items-start">
+                <div className="w-11 h-11 rounded-xl bg-primary-container text-secondary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">visibility</span>
+                </div>
+                <div>
+                  <h2 id="status-title" className="font-headline-md text-2xl text-parchment">Definir status do veículo</h2>
+                  <p className="mt-2 text-sm text-on-surface-variant">Onde <strong className="text-parchment">{title.trim()}</strong> deve ficar visível?</p>
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => confirmSaveWithStatus(option.value)}
+                    className="min-h-12 px-4 rounded-xl bg-surface-container border border-surface-variant/40 text-sm font-label-caps text-parchment hover:border-secondary hover:bg-surface-variant/40 transition-colors cursor-pointer text-left flex items-center gap-3"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-secondary">
+                      {option.value === 'published' ? 'public' : option.value === 'reserved' ? 'bookmark' : option.value === 'draft' ? 'edit_note' : 'sell'}
+                    </span>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-5 text-xs text-on-surface-variant">Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.</p>
+              <div className="mt-5 flex justify-end">
+                <button type="button" onClick={closeStatusPrompt} className="min-h-11 px-4 rounded-xl text-xs font-label-caps text-on-surface-variant hover:bg-surface-container">Cancelar</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {deleteCandidate && (
           <div className="fixed inset-0 z-50 grid place-items-center p-5 bg-background/80" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDeleteDialog(); }}>
