@@ -665,7 +665,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     className={`min-h-11 px-3 py-2.5 rounded-lg font-label-caps text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-secondary ${activeTab === 'collection' ? 'text-parchment bg-surface-container-highest' : 'text-on-surface-variant hover:text-parchment'}`}
                   >
                     <span className="material-symbols-outlined text-[16px]">directions_car</span>
-                    <span>Acervo</span>
+                    <span>Coleção</span>
                   </button>
                 </nav>
 
