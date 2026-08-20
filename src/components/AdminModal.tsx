@@ -1059,7 +1059,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                                 {imageSlots[slot].startsWith('http') && (
                                   <div className="absolute top-2 right-2 bg-emerald-950/90 border border-emerald-400/60 text-emerald-300 font-label-caps text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-md">
                                     <span className="material-symbols-outlined text-[13px]">cloud_done</span>
-                                    <span>Supabase Storage</span>
+                                    <span>Salvo</span>
                                   </div>
                                 )}
                               </div>
