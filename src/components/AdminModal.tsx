@@ -533,11 +533,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
               </div>
               <div>
                 <h1 className="font-headline-md text-lg md:text-xl text-parchment">
-                  {isAuthenticated ? 'Curadoria do acervo' : 'Acesso administrativo'}
+                  {isAuthenticated ? 'Minha Coleção' : 'Acesso administrativo'}
                 </h1>
-                <p className="text-[11px] text-on-surface-variant">
-                  Studio SenhorEle
-                </p>
               </div>
             </div>
 
