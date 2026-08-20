@@ -46,9 +46,6 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="font-headline-md text-headline-md text-parchment tracking-tighter group-hover:text-amber-glow transition-colors">
-                Studio SenhorEle
-              </div>
             </a>
 
             <p className="font-body-md text-body-md text-on-surface-variant max-w-sm">
@@ -115,19 +112,11 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
             </h4>
             <a
               className="font-body-md text-body-md text-on-surface-variant hover:text-parchment underline underline-offset-4 transition-all"
-              href="https://www.instagram.com/studiosenhorele/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Instagram @studiosenhorele
-            </a>
-            <a
-              className="font-body-md text-body-md text-on-surface-variant hover:text-parchment underline underline-offset-4 transition-all"
               href={buildWhatsAppLink('')}
               target="_blank"
               rel="noopener noreferrer"
             >
-              WhatsApp (11) 94725-1630
+              WhatsApp
             </a>
           </div>
 

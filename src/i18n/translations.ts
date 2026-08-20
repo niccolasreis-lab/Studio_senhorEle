@@ -243,7 +243,7 @@ export const translations: Record<Language, Translations> = {
     footer: {
       description: 'Curadoria especializada em clássicos automotivos VW Air-Cooled e Porsche. Preservando histórias e movendo paixões.',
       navigationTitle: 'Navegação',
-      contactTitle: 'Conversas sobre o acervo',
+      contactTitle: 'Entre em Contato',
       hoursTitle: 'Atendimento',
       hoursText: 'Segunda a Sexta: 09h às 18h',
       rights: 'Todos os direitos reservados.',
