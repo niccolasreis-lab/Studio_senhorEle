@@ -1,6 +1,7 @@
-import { Instagram, MessageCircle } from 'lucide-react';
+import { Globe, Instagram, MessageCircle } from 'lucide-react';
 
 const NEXA_LOGO = '/assets/images/logotipo_nexareis.png';
+const NEXA_WEBSITE_URL = 'https://nexareis.com.br/';
 const NEXA_INSTAGRAM_URL = 'https://instagram.com/nexareisautomacao';
 const NEXA_WHATSAPP_URL = 'https://wa.me/5511937105501';
 
@@ -24,6 +25,18 @@ export default function DevSignature() {
               <span className="font-semibold text-gray-300">Nexa Reis Automation</span>
             </span>
           </div>
+
+          <span className="hidden md:inline text-gray-700" aria-hidden="true">•</span>
+
+          <a
+            href={NEXA_WEBSITE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-cyan-500"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            <span>nexareis.com.br</span>
+          </a>
 
           <span className="hidden md:inline text-gray-700" aria-hidden="true">•</span>
 
