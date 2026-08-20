@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
@@ -326,6 +326,16 @@ export default function VehicleDetailModal({
   if (!vehicle) return null;
 
   const vehicleShareUrl = buildShareUrl(vehicle.shareId);
+
+  useEffect(() => {
+    if (!vehicleId || !vehicle) return;
+    const previousUrl = window.location.href;
+    const shareUrl = buildShareUrl(vehicle.shareId);
+    window.history.replaceState({}, '', shareUrl);
+    return () => {
+      window.history.replaceState({}, '', previousUrl);
+    };
+  }, [vehicleId, vehicle?.shareId]);
 
   const handleShare = async () => {
     playMechanicalClick('click');
