@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -35,7 +35,7 @@ interface IntersectionObserverGridCardProps {
 }
 
 // Custom component using native IntersectionObserver for smooth scroll animations
-function IntersectionObserverGridCard({
+const IntersectionObserverGridCard = memo(function IntersectionObserverGridCard({
   item,
   index,
   onOpenDetail,
@@ -43,7 +43,6 @@ function IntersectionObserverGridCard({
 }: IntersectionObserverGridCardProps) {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement | null>(null);
   const { ref: tiltRef, tiltProps, glareProps } = use3DTilt(8);
 
   const handleWhatsAppShare = () => {
@@ -58,7 +57,7 @@ function IntersectionObserverGridCard({
   };
 
   useEffect(() => {
-    const element = cardRef.current;
+    const element = tiltRef.current;
     if (!element) return;
 
     // Set up native Intersection Observer
@@ -91,10 +90,7 @@ function IntersectionObserverGridCard({
 
   return (
     <div
-      ref={(node) => {
-        cardRef.current = node;
-        tiltRef.current = node;
-      }}
+      ref={tiltRef}
       {...tiltProps}
       className="relative rounded-2xl h-full"
     >
@@ -225,9 +221,9 @@ function IntersectionObserverGridCard({
     </motion.div>
     </div>
   );
-}
+});
 
-export default function Collection({ onSelectCarForInquiry, onOpenDetail }: CollectionProps) {
+const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetail }: CollectionProps) {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagKey, setSelectedTagKey] = useState<keyof Translations['collection']['filters']>('all');
@@ -584,35 +580,30 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
                       scale: 1,
                       rotateY: 0,
                       opacity: 1,
-                      filter: 'blur(0px)',
                     },
                     left: {
                       x: '-68%',
                       scale: 0.86,
                       rotateY: 22,
                       opacity: 0.65,
-                      filter: 'blur(0.5px)',
                     },
                     right: {
                       x: '68%',
                       scale: 0.86,
                       rotateY: -22,
                       opacity: 0.65,
-                      filter: 'blur(0.5px)',
                     },
                     hiddenLeft: {
                       x: '-130%',
                       scale: 0.7,
                       rotateY: 40,
                       opacity: 0,
-                      filter: 'blur(3px)',
                     },
                     hiddenRight: {
                       x: '130%',
                       scale: 0.7,
                       rotateY: -40,
                       opacity: 0,
-                      filter: 'blur(3px)',
                     },
                   }}
                   transition={{
@@ -637,7 +628,7 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
                       else if (onSelectCarForInquiry) onSelectCarForInquiry(item.title);
                     }
                   }}
-                  style={{ zIndex, transformStyle: 'preserve-3d' }}
+                  style={{ zIndex, transformStyle: 'preserve-3d', willChange: 'transform' }}
                   className="carousel-item absolute w-[280px] sm:w-[320px] md:w-[400px] h-[450px] md:h-[500px] rounded-2xl overflow-hidden border border-surface-variant/40 bg-surface-container-high flex flex-col group cursor-pointer shadow-[0_25px_60px_rgba(0,0,0,0.6)]"
                 >
                   <div className="h-2/3 w-full relative overflow-hidden">
@@ -771,4 +762,6 @@ export default function Collection({ onSelectCarForInquiry, onOpenDetail }: Coll
       )}
     </motion.section>
   );
-}
+});
+
+export default Collection;

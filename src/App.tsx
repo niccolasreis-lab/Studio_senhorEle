@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
@@ -32,6 +32,10 @@ export default function App() {
       return next;
     });
   };
+
+  const handleOpenVehicleDetail = useCallback((vehicleId: string) => {
+    setSelectedVehicleDetail(vehicleId);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -86,7 +90,7 @@ export default function App() {
             <Hero />
             <About />
             <Collection
-              onOpenDetail={(vehicleId) => setSelectedVehicleDetail(vehicleId)}
+              onOpenDetail={handleOpenVehicleDetail}
             />
           </main>
           <Footer 
