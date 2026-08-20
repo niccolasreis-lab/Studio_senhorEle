@@ -310,6 +310,7 @@ export default function VehicleDetailModal({
           { src: customMatch.image, angleLabel: 'Imagem 1', caption: customMatch.subtitle },
           ...(customMatch.image2 ? [{ src: customMatch.image2, angleLabel: 'Imagem 2', caption: customMatch.subtitle }] : []),
           ...(customMatch.image3 ? [{ src: customMatch.image3, angleLabel: 'Imagem 3', caption: customMatch.subtitle }] : []),
+          ...(customMatch.gallery || []).map((src, i) => ({ src, angleLabel: `Imagem ${i + 4}`, caption: customMatch.subtitle })),
         ],
         specs:
           customMatch.specs && customMatch.specs.length > 0

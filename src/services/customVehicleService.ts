@@ -9,6 +9,7 @@ export interface CustomVehicle {
   image: string;
   image2?: string;
   image3?: string;
+  gallery?: string[];
   year: string;
   engine: string;
   transmission: string;

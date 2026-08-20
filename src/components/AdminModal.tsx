@@ -5,6 +5,7 @@ import { CustomVehicleService, CustomVehicle, VehicleStatus } from '../services/
 import { SupabaseService } from '../services/supabaseService';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { curatedMetadataForModel } from '../data/collectionVehicles';
+import { normalizeImageFile } from '../utils/imageUtils';
 
 const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: 'draft', label: 'Rascunho' },
@@ -133,9 +134,9 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     }
   }, [expressBrand, expressModel, expressYear]);
 
-  // Cloud Image state (3 image slots)
-  const IMAGE_SLOTS = 3;
-  const IMAGE_LABELS = ['Imagem 1', 'Imagem 2', 'Imagem 3'];
+  // Cloud Image state (image slots + gallery extras)
+  const IMAGE_SLOTS = 6;
+  const IMAGE_LABELS = ['Imagem 1', 'Imagem 2', 'Imagem 3', 'Imagem 4', 'Imagem 5', 'Imagem 6'];
   const [selectedFiles, setSelectedFiles] = useState<(File | null)[]>(Array(IMAGE_SLOTS).fill(null));
   const [cloudErrors, setCloudErrors] = useState<string[]>(Array(IMAGE_SLOTS).fill(''));
 
@@ -274,13 +275,14 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setSelectedFiles(nextFiles);
     setCloudErrors(nextErrors);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setImageSlots((prev) => { const n = [...prev]; n[slot] = result; return n; });
-      setImagePreviews((prev) => { const n = [...prev]; n[slot] = result; return n; });
-    };
-    reader.readAsDataURL(file);
+    normalizeImageFile(file).then(({ file: normalized, preview }) => {
+      setSelectedFiles((prev) => { const n = [...prev]; n[slot] = normalized; return n; });
+      setImageSlots((prev) => { const n = [...prev]; n[slot] = preview; return n; });
+      setImagePreviews((prev) => { const n = [...prev]; n[slot] = preview; return n; });
+    }).catch(() => {
+      nextErrors[slot] = 'Não foi possível processar esta imagem (HEIC/HEIF).';
+      setCloudErrors(nextErrors);
+    });
   };
 
   // Upload de imagem: feito exclusivamente no momento de "Salvar Alterações".
@@ -338,7 +340,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     setPower(v.power || '');
     setDescription(v.description || '');
     setVehicleStatus(v.status);
-    const imgs = [v.image, v.image2 || '', v.image3 || ''];
+    const imgs = [v.image, v.image2 || '', v.image3 || '', ...(v.gallery || [])];
     setImageSlots(imgs);
     setImagePreviews(imgs);
     setSelectedFiles(Array(IMAGE_SLOTS).fill(null));
@@ -414,6 +416,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       const defaultImage = uploadedUrls[0] || '/assets/images/vw-fusca-cal-style-1968.jpg';
       const defaultImage2 = uploadedUrls[1] || '';
       const defaultImage3 = uploadedUrls[2] || '';
+      const gallery = uploadedUrls.slice(3, IMAGE_SLOTS).filter(Boolean) as string[];
 
       // 2. Salva o veículo (inclusão ou edição) com as URLs já confirmadas.
       let savedId = editingVehicleId;
@@ -432,6 +435,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
+          gallery,
           history: generatedHistory.length ? generatedHistory : undefined,
           curiosities: generatedCuriosities.length ? generatedCuriosities : undefined,
         });
@@ -451,6 +455,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           image: defaultImage,
           image2: defaultImage2,
           image3: defaultImage3,
+          gallery,
           history: generatedHistory.length ? generatedHistory : undefined,
           curiosities: generatedCuriosities.length ? generatedCuriosities : undefined,
         });
@@ -1040,7 +1045,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     {/* Image Upload & Preview (Imagem 1, 2 e 3) */}
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <label className="block font-label-caps text-xs text-on-surface-variant">Imagens do Veículo (Até 3: Imagem 1, Imagem 2 e Imagem 3)</label>
+                        <label className="block font-label-caps text-xs text-on-surface-variant">Imagens do Veículo (até 6: Imagem 1–6)</label>
                       </div>
 
                       {Array.from({ length: IMAGE_SLOTS }).map((_, slot) => {
