@@ -325,9 +325,12 @@ export default function VehicleDetailModal({
 
   if (!vehicle) return null;
 
+  const vehicleShareUrl = buildShareUrl(vehicle.shareId);
+  const vehicleImageUrl = new URL(vehicle.image, window.location.origin).href;
+
   const handleShare = async () => {
     playMechanicalClick('click');
-    const shareUrl = buildShareUrl(vehicle.shareId);
+    const shareUrl = vehicleShareUrl;
     const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}`;
 
     if (navigator.share) {
@@ -350,7 +353,7 @@ export default function VehicleDetailModal({
 
   const handleWhatsAppShare = () => {
     playMechanicalClick('click');
-    const shareUrl = buildShareUrl(vehicle.shareId);
+    const shareUrl = vehicleShareUrl;
     const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
   };
@@ -672,7 +675,12 @@ export default function VehicleDetailModal({
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ duration: 0.15 }}
-                href={buildWhatsAppLink(`Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${vehicle.title} (#${vehicle.shareId})`)}
+                href={buildWhatsAppLink([
+                  `Olá, Studio SenhorEle! Gostaria de mais informações sobre o veículo: ${vehicle.title} (#${vehicle.shareId}).`,
+                  '',
+                  `Link do veículo: ${vehicleShareUrl}`,
+                  `Imagem: ${vehicleImageUrl}`,
+                ].join('\n'))}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => playMechanicalClick('click')}
