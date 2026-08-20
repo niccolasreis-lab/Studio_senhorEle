@@ -166,7 +166,7 @@ export const translations: Record<Language, Translations> = {
       collectionTodayText: 'Hoje o Studio reúne veículos das décadas de 50, 60, 70, 80, 90 e 2000 — a maioria Air Cooled, mas também Fuscas, Kombis e Porsches de lançamentos especiais.',
     },
     collection: {
-      tagline: 'NOSSO ACERVO',
+      tagline: 'NOSSA COLEÇÃO',
       title: 'Coleção de Clássicos Exclusivos',
       searchPlaceholder: 'Buscar por modelo, ano ou código Share ID...',
       filters: {
