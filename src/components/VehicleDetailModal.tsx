@@ -5,6 +5,7 @@ import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { useLanguage } from '../i18n/LanguageContext';
 import { buildWhatsAppLink } from '../config/contact';
 import { buildShareUrl } from '../utils/share';
+import { webpImageUrl } from '../utils/imageUtils';
 import ImageLightboxModal, { GalleryItem } from './ImageLightboxModal';
 
 export interface VehicleDetail {
@@ -307,10 +308,10 @@ export default function VehicleDetailModal({
         curiosities: customMatch.curiosities,
         restorationHistory: customMatch.history,
         gallery: [
-          { src: customMatch.image, angleLabel: 'Imagem 1', caption: customMatch.subtitle },
-          ...(customMatch.image2 ? [{ src: customMatch.image2, angleLabel: 'Imagem 2', caption: customMatch.subtitle }] : []),
-          ...(customMatch.image3 ? [{ src: customMatch.image3, angleLabel: 'Imagem 3', caption: customMatch.subtitle }] : []),
-          ...(customMatch.gallery || []).map((src, i) => ({ src, angleLabel: `Imagem ${i + 4}`, caption: customMatch.subtitle })),
+          { src: webpImageUrl(customMatch.image), angleLabel: 'Imagem 1', caption: customMatch.subtitle },
+          ...(customMatch.image2 ? [{ src: webpImageUrl(customMatch.image2), angleLabel: 'Imagem 2', caption: customMatch.subtitle }] : []),
+          ...(customMatch.image3 ? [{ src: webpImageUrl(customMatch.image3), angleLabel: 'Imagem 3', caption: customMatch.subtitle }] : []),
+          ...(customMatch.gallery || []).map((src, i) => ({ src: webpImageUrl(src), angleLabel: `Imagem ${i + 4}`, caption: customMatch.subtitle })),
         ],
         specs:
           customMatch.specs && customMatch.specs.length > 0
@@ -424,7 +425,7 @@ export default function VehicleDetailModal({
             {/* Header Image with close button & badge */}
             <div className="relative h-64 sm:h-80 w-full shrink-0 overflow-hidden bg-background">
               <img
-                src={vehicle.image}
+                src={webpImageUrl(vehicle.image)}
                 alt={vehicle.title}
                 decoding="async"
                 width="1600"

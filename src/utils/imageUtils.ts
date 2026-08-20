@@ -5,6 +5,19 @@ export type NormalizedImageFile = {
   preview: string;
 };
 
+const SUPABASE_OBJECT_URL_RE = /\/storage\/v1\/object\/public\//;
+
+/** Serve Supabase Storage images via the render endpoint as WebP in high quality.
+ *  URLs from other sources (local assets, Unsplash, etc.) are returned unchanged. */
+export const webpImageUrl = (src: string, quality = 90): string => {
+  if (!src || !SUPABASE_OBJECT_URL_RE.test(src)) return src;
+  const base = src.split('?')[0];
+  return (
+    base.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
+    `?quality=${quality}`
+  );
+};
+
 const HEIC_EXTENSIONS = ['heic', 'heif', 'heics', 'heifs', 'hif'];
 
 export const isHeicFile = (file: File): boolean => {

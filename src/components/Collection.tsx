@@ -7,6 +7,7 @@ import { use3DTilt } from '../hooks/use3DTilt';
 import { CustomVehicleService, VehicleStatus } from '../services/customVehicleService';
 import { buildWhatsAppLink } from '../config/contact';
 import { buildShareUrl } from '../utils/share';
+import { webpImageUrl } from '../utils/imageUtils';
 
 interface CarItem {
   id: string;
@@ -120,7 +121,7 @@ const IntersectionObserverGridCard = memo(function IntersectionObserverGridCard(
         }}
       >
         <img
-          src={item.image}
+          src={webpImageUrl(item.image)}
           alt={item.title}
           loading="lazy"
           decoding="async"
@@ -633,7 +634,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
                 >
                   <div className="h-2/3 w-full relative overflow-hidden">
                     <img
-                      src={item.image}
+                      src={webpImageUrl(item.image)}
                       alt={item.title}
                       loading="lazy"
                       decoding="async"
