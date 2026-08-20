@@ -1109,7 +1109,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 {activeTab === 'collection' && <section className="space-y-5" aria-labelledby="collection-heading">
                   <div className="flex items-center justify-between">
                     <h2 id="collection-heading" className="font-headline-md text-2xl md:text-3xl text-parchment">
-                      Acervo completo
+                      Coleção completa
                     </h2>
                     <span className="text-xs text-on-surface-variant tabular-nums">
                       {filteredVehicles.length} de {allVehicles.length}
