@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
 import { buildWhatsAppLink } from '../config/contact';
+import DevSignature from './DevSignature';
 
 interface FooterProps {
   onOpenInquire?: () => void;
@@ -149,6 +150,8 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
           </div>
         </div>
       </motion.div>
+
+      <DevSignature />
     </footer>
   );
 }
