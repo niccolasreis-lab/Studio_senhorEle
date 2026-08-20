@@ -623,7 +623,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                   <div className="flex items-center space-x-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                     <span className="font-label-caps text-xs text-secondary font-bold">
-                      Sessão Ativa do Curador ({allVehicles.length} Veículos no Acervo)
+                      Sessão Ativa do Curador ({allVehicles.length} Veículos na Coleção)
                     </span>
                   </div>
                   <button
