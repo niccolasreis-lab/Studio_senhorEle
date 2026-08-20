@@ -433,37 +433,40 @@ export default function VehicleDetailModal({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-surface-container-high via-surface-container-high/20 to-transparent pointer-events-none" />
 
-              {/* Close Button */}
-              <motion.button
-                whileHover={{ scale: 1.15, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-                onClick={onClose}
-                className="absolute top-4 right-4 text-on-surface-variant hover:text-parchment transition-colors p-2.5 rounded-full bg-background/60 backdrop-blur-md border border-surface-variant/40 hover:bg-surface-variant/60 cursor-pointer shadow-lg z-20"
-                aria-label="Fechar modal"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </motion.button>
-
               {/* Share ID Badge & Quick Actions */}
-              <div className="absolute top-4 left-4 z-20 flex items-center space-x-2">
-                <span className="bg-background/80 backdrop-blur-md border border-secondary/50 text-secondary font-label-caps text-xs px-3 py-1.5 rounded-full shadow-md flex items-center space-x-1">
-                  <span className="material-symbols-outlined text-[14px]">tag</span>
-                  <span>#{vehicle.shareId}</span>
-                </span>
-                
+              <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <span className="bg-background/80 backdrop-blur-md border border-secondary/50 text-secondary font-label-caps text-xs px-3 py-1.5 rounded-full shadow-md flex items-center space-x-1">
+                    <span className="material-symbols-outlined text-[14px]">tag</span>
+                    <span className="truncate">#{vehicle.shareId}</span>
+                  </span>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      playMechanicalClick('slide');
+                      setIsLightboxOpen(true);
+                    }}
+                    className="bg-background/80 backdrop-blur-md border border-amber-glow/60 hover:border-amber-glow text-amber-glow font-label-caps text-xs px-3 py-1.5 rounded-full shadow-md flex items-center space-x-1.5 cursor-pointer hover:bg-amber-glow/20 transition-all shrink-0"
+                    title="Abrir Galeria de Arte Fullscreen"
+                    aria-label={t.galleryModal.viewGallery}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">fullscreen</span>
+                    <span className="hidden sm:inline">{t.galleryModal.viewGallery}</span>
+                  </motion.button>
+                </div>
+
+                {/* Close Button */}
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    playMechanicalClick('slide');
-                    setIsLightboxOpen(true);
-                  }}
-                  className="bg-background/80 backdrop-blur-md border border-amber-glow/60 hover:border-amber-glow text-amber-glow font-label-caps text-xs px-3 py-1.5 rounded-full shadow-md flex items-center space-x-1.5 cursor-pointer hover:bg-amber-glow/20 transition-all"
-                  title="Abrir Galeria de Arte Fullscreen"
+                  whileHover={{ scale: 1.15, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={onClose}
+                  className="text-on-surface-variant hover:text-parchment transition-colors p-2.5 rounded-full bg-background/60 backdrop-blur-md border border-surface-variant/40 hover:bg-surface-variant/60 cursor-pointer shadow-lg shrink-0"
+                  aria-label="Fechar modal"
                 >
-                  <span className="material-symbols-outlined text-[15px]">fullscreen</span>
-                  <span>{t.galleryModal.viewGallery}</span>
+                  <span className="material-symbols-outlined text-[20px]">close</span>
                 </motion.button>
               </div>
 
