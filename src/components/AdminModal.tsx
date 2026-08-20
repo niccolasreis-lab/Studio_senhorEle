@@ -156,7 +156,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [savedShareId, setSavedShareId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [statusPromptOpen, setStatusPromptOpen] = useState(false);
+  const [pendingStatusVehicle, setPendingStatusVehicle] = useState<{ id: string; title: string } | null>(null);
   // Histórico/curiosidades gerados pelo Cadastro Rápido (persistidos junto ao veículo)
   const [generatedHistory, setGeneratedHistory] = useState<string[]>([]);
   const [generatedCuriosities, setGeneratedCuriosities] = useState<string[]>([]);
@@ -206,8 +206,8 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const closeDeleteDialog = useCallback(() => setDeleteCandidate(null), []);
   const deleteDialogRef = useAccessibleModal<HTMLDivElement>(Boolean(deleteCandidate), closeDeleteDialog);
 
-  const closeStatusPrompt = useCallback(() => setStatusPromptOpen(false), []);
-  const statusDialogRef = useAccessibleModal<HTMLDivElement>(statusPromptOpen, closeStatusPrompt);
+  const closeStatusPrompt = useCallback(() => setPendingStatusVehicle(null), []);
+  const statusDialogRef = useAccessibleModal<HTMLDivElement>(Boolean(pendingStatusVehicle), closeStatusPrompt);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -380,13 +380,17 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       return;
     }
 
-    setStatusPromptOpen(true);
+    void performSave('draft');
   };
 
   const confirmSaveWithStatus = (status: VehicleStatus) => {
+    if (!pendingStatusVehicle) return;
+    playMechanicalClick('click');
+    CustomVehicleService.updateCustomVehicle(pendingStatusVehicle.id, { status });
     setVehicleStatus(status);
-    setStatusPromptOpen(false);
-    void performSave(status);
+    setPendingStatusVehicle(null);
+    refreshVehiclesList();
+    onVehicleAdded?.();
   };
 
   const performSave = async (status: VehicleStatus) => {
@@ -412,6 +416,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       const defaultImage3 = uploadedUrls[2] || '';
 
       // 2. Salva o veículo (inclusão ou edição) com as URLs já confirmadas.
+      let savedId = editingVehicleId;
       if (editingVehicleId) {
         CustomVehicleService.updateCustomVehicle(editingVehicleId, {
           title: title.trim(),
@@ -432,7 +437,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
         });
         setSuccessMsg(`Veículo "${title.trim()}" atualizado com sucesso!`);
       } else {
-        CustomVehicleService.addCustomVehicle({
+        const newVehicle = CustomVehicleService.addCustomVehicle({
           title: title.trim(),
           subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
           shareId: defaultShareId,
@@ -449,6 +454,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
           history: generatedHistory.length ? generatedHistory : undefined,
           curiosities: generatedCuriosities.length ? generatedCuriosities : undefined,
         });
+        savedId = newVehicle.id;
         setSuccessMsg(`Veículo "${title.trim()}" cadastrado no acervo!`);
       }
 
@@ -457,6 +463,10 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       refreshVehiclesList();
       if (onVehicleAdded) onVehicleAdded();
       resetForm();
+
+      if (savedId) {
+        setPendingStatusVehicle({ id: savedId, title: title.trim() });
+      }
     } catch (err: any) {
       setSaveError(err?.message || 'Não foi possível salvar. Verifique a conexão.');
     } finally {
@@ -1243,7 +1253,7 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
           </main>
         </motion.div>
 
-        {statusPromptOpen && (
+        {pendingStatusVehicle && (
           <div className="fixed inset-0 z-50 grid place-items-center p-5 bg-background/80" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeStatusPrompt(); }}>
             <motion.div ref={statusDialogRef} role="dialog" aria-modal="true" aria-labelledby="status-title" initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-md rounded-2xl bg-surface-container-low p-6 shadow-2xl">
               <div className="flex gap-4 items-start">
@@ -1251,8 +1261,8 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                   <span className="material-symbols-outlined text-[22px]">visibility</span>
                 </div>
                 <div>
-                  <h2 id="status-title" className="font-headline-md text-2xl text-parchment">Definir status do veículo</h2>
-                  <p className="mt-2 text-sm text-on-surface-variant">Onde <strong className="text-parchment">{title.trim()}</strong> deve ficar visível?</p>
+                  <h2 id="status-title" className="font-headline-md text-2xl text-parchment">Veículo salvo! Defina o status</h2>
+                  <p className="mt-2 text-sm text-on-surface-variant">Onde <strong className="text-parchment">{pendingStatusVehicle.title}</strong> deve ficar visível?</p>
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
