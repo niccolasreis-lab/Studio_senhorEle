@@ -136,6 +136,12 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
             >
               {t.nav.purpose}
             </a>
+            <a
+              className="font-body-md text-body-md text-on-surface-variant hover:text-parchment underline underline-offset-4 transition-all"
+              href="#partners"
+            >
+              {t.nav.partners}
+            </a>
           </div>
         </div>
       </motion.div>

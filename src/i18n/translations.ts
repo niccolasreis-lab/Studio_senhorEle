@@ -5,6 +5,7 @@ export interface Translations {
     collection: string;
     about: string;
     purpose: string;
+    partners: string;
     inquire: string;
   };
   hero: {
@@ -60,6 +61,23 @@ export interface Translations {
     copied: string;
     noResultsTitle: string;
     noResultsText: string;
+  };
+  partners: {
+    title: string;
+    description: string;
+    actionLabel: string;
+    instagramDestination: string;
+    websiteDestination: string;
+    fallbackLabel: string;
+    newTabLabel: string;
+    peluciaImageAlt: string;
+    lobatoImageAlt: string;
+    categories: {
+      detailing: string;
+      automotiveServices: string;
+      mechanicsAndElectrical: string;
+      performanceAndTechnology: string;
+    };
   };
   instagramCard: {
     viewPost: string;
@@ -131,6 +149,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Coleção',
       about: 'Nossa História',
       purpose: 'Propósito',
+      partners: 'Parceiros',
       inquire: 'Contato',
     },
     hero: {
@@ -185,6 +204,23 @@ export const translations: Record<Language, Translations> = {
       copied: 'Link copiado!',
       noResultsTitle: 'Nenhum clássico encontrado',
       noResultsText: 'Tente ajustar os termos de busca ou selecionar outro filtro acima.',
+    },
+    partners: {
+      title: 'Parceiros',
+      description: 'Profissionais e empresas que compartilham nossa paixão pelo universo automotivo.',
+      actionLabel: 'Conhecer parceiro',
+      instagramDestination: 'Ver Instagram',
+      websiteDestination: 'Visitar website',
+      fallbackLabel: 'Identidade visual em atualização',
+      newTabLabel: 'abre em nova guia',
+      peluciaImageAlt: 'Imagem histórica automotiva fornecida para a Pelúcia Estética Automotiva',
+      lobatoImageAlt: 'Imagem representativa dos serviços automotivos de Lobato Gui',
+      categories: {
+        detailing: 'Estética automotiva',
+        automotiveServices: 'Serviços automotivos',
+        mechanicsAndElectrical: 'Mecânica e elétrica automotiva',
+        performanceAndTechnology: 'Preparação e tecnologia automotiva',
+      },
     },
     instagramCard: {
       viewPost: 'Ver no Instagram',
@@ -254,6 +290,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Collection',
       about: 'Our Story',
       purpose: 'Purpose',
+      partners: 'Partners',
       inquire: 'Contact',
     },
     hero: {
@@ -308,6 +345,23 @@ export const translations: Record<Language, Translations> = {
       copied: 'Link copied!',
       noResultsTitle: 'No classic vehicles found',
       noResultsText: 'Try adjusting your search query or selecting a different filter above.',
+    },
+    partners: {
+      title: 'Partners',
+      description: 'Professionals and companies who share our passion for the automotive world.',
+      actionLabel: 'Meet partner',
+      instagramDestination: 'View Instagram',
+      websiteDestination: 'Visit website',
+      fallbackLabel: 'Visual identity being updated',
+      newTabLabel: 'opens in a new tab',
+      peluciaImageAlt: 'Historic automotive image provided for Pelúcia Estética Automotiva',
+      lobatoImageAlt: 'Representative image of Lobato Gui automotive services',
+      categories: {
+        detailing: 'Automotive detailing',
+        automotiveServices: 'Automotive services',
+        mechanicsAndElectrical: 'Automotive mechanics and electrical',
+        performanceAndTechnology: 'Automotive performance and technology',
+      },
     },
     instagramCard: {
       viewPost: 'View on Instagram',
@@ -377,6 +431,7 @@ export const translations: Record<Language, Translations> = {
       collection: 'Kollektion',
       about: 'Über uns',
       purpose: 'Philosophie',
+      partners: 'Partner',
       inquire: 'Kontakt',
     },
     hero: {
@@ -431,6 +486,23 @@ export const translations: Record<Language, Translations> = {
       copied: 'Link kopiert!',
       noResultsTitle: 'Keine Klassiker gefunden',
       noResultsText: 'Bitte passen Sie Ihre Suchanfrage oder den gewählten Filter an.',
+    },
+    partners: {
+      title: 'Partner',
+      description: 'Fachleute und Unternehmen, die unsere Leidenschaft für die automobile Welt teilen.',
+      actionLabel: 'Partner kennenlernen',
+      instagramDestination: 'Instagram ansehen',
+      websiteDestination: 'Website besuchen',
+      fallbackLabel: 'Visuelle Identität wird aktualisiert',
+      newTabLabel: 'wird in einem neuen Tab geöffnet',
+      peluciaImageAlt: 'Historisches Automobilbild, bereitgestellt für Pelúcia Estética Automotiva',
+      lobatoImageAlt: 'Repräsentatives Bild der Automobildienstleistungen von Lobato Gui',
+      categories: {
+        detailing: 'Fahrzeugaufbereitung',
+        automotiveServices: 'Automobildienstleistungen',
+        mechanicsAndElectrical: 'Kfz-Mechanik und -Elektrik',
+        performanceAndTechnology: 'Fahrzeugoptimierung und -technologie',
+      },
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',

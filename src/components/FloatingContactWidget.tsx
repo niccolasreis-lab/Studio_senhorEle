@@ -22,7 +22,7 @@ export default function FloatingContactWidget({ onOpenInquire }: FloatingContact
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-40 hidden flex-col items-end sm:flex">
       {/* Expanded Contact Stack */}
       <AnimatePresence>
         {isOpen && (

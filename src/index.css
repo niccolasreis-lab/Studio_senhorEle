@@ -173,3 +173,37 @@ html {
 .carousel-container {
   perspective: 1000px;
 }
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-viewport {
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.marquee-track {
+  animation: marquee var(--marquee-duration, 36s) linear infinite;
+  animation-direction: var(--marquee-direction, normal);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-viewport {
+    overflow-x: auto;
+    mask-image: none;
+    scrollbar-color: var(--color-outline-variant) transparent;
+    scrollbar-width: thin;
+  }
+
+  .marquee-track {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .marquee-clone {
+    display: none;
+  }
+}

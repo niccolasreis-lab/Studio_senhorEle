@@ -93,7 +93,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
             </div>
           </a>
 
-          <ul className="hidden sm:flex space-x-2 sm:space-x-4 md:space-x-8 lg:space-x-10 items-center">
+          <ul className="hidden lg:flex lg:space-x-6 xl:space-x-8 items-center">
             <li>
               <motion.a 
                 whileHover={{ scale: 1.06 }}
@@ -130,6 +130,18 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                 {t.nav.purpose}
               </motion.a>
             </li>
+            <li>
+              <motion.a
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                onClick={(e) => handleNavClick(e, 'partners')}
+                className="font-label-caps text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer"
+                href="#partners"
+              >
+                {t.nav.partners}
+              </motion.a>
+            </li>
           </ul>
 
           <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-6">
@@ -143,7 +155,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playMechanicalClick('click')}
-              className="hidden sm:flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-xs md:text-sm lg:text-base px-3 sm:px-4 md:px-5 lg:px-6 py-2 md:py-3 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer shadow-md font-semibold tracking-wider whitespace-nowrap"
+              className="hidden xl:flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-base px-6 py-3 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer shadow-md font-semibold tracking-wider whitespace-nowrap"
             >
               {t.nav.inquire}
             </motion.a>
@@ -152,7 +164,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="sm:hidden min-h-11 min-w-11 inline-flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-lg"
+              className="lg:hidden min-h-11 min-w-11 inline-flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-lg"
               onClick={() => {
                 playMechanicalClick('click');
                 setIsOpen(!isOpen);
@@ -172,7 +184,7 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="sm:hidden bg-background/95 backdrop-blur-lg border-t border-surface-variant/30 overflow-hidden"
+              className="lg:hidden bg-background/95 backdrop-blur-lg border-t border-surface-variant/30 overflow-hidden"
             >
               <ul className="flex flex-col py-4 px-margin-mobile">
                 <li className="py-2">
@@ -209,6 +221,18 @@ export default function Navigation({ onOpenInquire }: NavigationProps) {
                     href="#purpose"
                   >
                     {t.nav.purpose}
+                  </motion.a>
+                </li>
+                <li className="py-2">
+                  <motion.a
+                    whileHover={{ scale: 1.03, x: 4 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={(e) => handleNavClick(e, 'partners')}
+                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer"
+                    href="#partners"
+                  >
+                    {t.nav.partners}
                   </motion.a>
                 </li>
                 <li className="py-3 mt-4">

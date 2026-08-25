@@ -4,6 +4,7 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
 import Collection from './components/Collection';
+import Partners from './components/Partners';
 import Footer from './components/Footer';
 import CustomCursor from './components/CustomCursor';
 import FloatingContactWidget from './components/FloatingContactWidget';
@@ -92,6 +93,7 @@ export default function App() {
             <Collection
               onOpenDetail={handleOpenVehicleDetail}
             />
+            <Partners />
           </main>
           <Footer 
             isFilmGrainEnabled={isFilmGrainEnabled}
