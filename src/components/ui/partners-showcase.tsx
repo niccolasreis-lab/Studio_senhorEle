@@ -53,7 +53,7 @@ export function PartnersShowcase({
     <section
       id="partners"
       aria-labelledby="partners-title"
-      className="relative scroll-mt-24 overflow-hidden border-y border-surface-variant/25 bg-surface-container-low px-margin-mobile py-section-gap md:px-margin-desktop"
+      className="relative scroll-mt-24 overflow-hidden border-y border-surface-variant/25 bg-surface-container-low px-margin-mobile py-20 sm:py-24 md:px-margin-desktop lg:py-section-gap"
     >
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-secondary/20" />
 
@@ -63,7 +63,7 @@ export function PartnersShowcase({
           whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-12 max-w-[72ch] md:mb-16"
+          className="mb-10 max-w-[72ch] sm:mb-12 lg:mb-16"
         >
           <h2
             id="partners-title"
@@ -80,7 +80,7 @@ export function PartnersShowcase({
           pauseOnHover
           speed={42}
           aria-label={title}
-          className="mt-2 py-6 md:py-8"
+          className="mt-1 py-4 sm:py-6 lg:py-8"
         >
           {partners.map((partner, index) => {
             const hasImageError = failedImages.has(partner.id);
@@ -95,28 +95,33 @@ export function PartnersShowcase({
                 rel="noopener noreferrer"
                 aria-label={`${destination}: ${partner.name} (${newTabLabel})`}
                 title={partner.name}
-                className="group relative flex h-28 w-[164px] shrink-0 items-center justify-center rounded-xl px-4 py-4 transition-[background-color,transform] duration-300 ease-out hover:bg-surface-container-high/55 focus-visible:bg-surface-container-high/55 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary sm:h-32 sm:w-[230px] sm:px-7 motion-reduce:transform-none motion-reduce:transition-none"
+                className="partner-link group relative flex h-28 w-[164px] shrink-0 touch-manipulation items-center justify-center rounded-xl px-4 py-4 transition-[background-color,transform] duration-300 ease-out hover:bg-surface-container-high/55 active:scale-[0.99] active:bg-surface-container-high/70 focus-visible:bg-surface-container-high/55 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary sm:h-32 sm:w-[200px] sm:px-6 lg:w-[200px] lg:px-5 xl:w-[216px] xl:px-6 motion-reduce:transform-none motion-reduce:transition-none"
               >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-1/2 top-2 z-10 max-w-[calc(100%-1rem)] -translate-x-1/2 translate-y-1 truncate rounded-md bg-surface-container-highest px-2.5 py-1 font-label-caps text-[9px] uppercase tracking-[0.08em] text-secondary opacity-0 shadow-[0_6px_18px_rgba(14,14,14,0.35)] transition-[opacity,transform] duration-200 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
-                >
-                  {partner.name}
-                </span>
                 {shouldShowImage ? (
-                  <img
-                    src={partner.logo}
-                    alt={partner.imageAlt ?? `Logotipo de ${partner.name}`}
-                    loading={index < 5 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    width="320"
-                    height="160"
-                    onError={() => handleImageError(partner)}
-                    className={cn(
-                      'max-h-20 w-full object-contain opacity-90 transition-[opacity,transform] duration-300 ease-out group-hover:scale-[1.03] group-hover:opacity-100 group-focus-visible:opacity-100 sm:max-h-24 motion-reduce:transition-none',
-                      partner.logoClassName,
-                    )}
-                  />
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute bottom-1.5 left-1/2 z-10 max-w-[calc(100%-1rem)] -translate-x-1/2 truncate px-2 py-1 font-label-caps text-[9px] uppercase tracking-[0.08em] text-secondary/85 opacity-100 transition-[opacity,transform] duration-200 ease-out lg:bottom-auto lg:top-2 lg:translate-y-1 lg:rounded-md lg:bg-surface-container-highest lg:px-2.5 lg:text-secondary lg:opacity-0 lg:shadow-[0_6px_18px_rgba(14,14,14,0.35)] lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:group-focus-visible:translate-y-0 lg:group-focus-visible:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
+                    >
+                      {partner.name}
+                    </span>
+                    <span className="flex h-full w-full items-center justify-center pb-5 lg:pb-0">
+                      <img
+                        src={partner.logo}
+                        alt={partner.imageAlt ?? `Logotipo de ${partner.name}`}
+                        loading={index < 5 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        draggable="false"
+                        width="320"
+                        height="160"
+                        onError={() => handleImageError(partner)}
+                        className={cn(
+                          'max-h-20 w-full select-none object-contain opacity-90 transition-[opacity,transform] duration-300 ease-out group-hover:scale-[1.03] group-hover:opacity-100 group-focus-visible:opacity-100 sm:max-h-24 motion-reduce:transition-none',
+                          partner.logoClassName,
+                        )}
+                      />
+                    </span>
+                  </>
                 ) : (
                   <span className="flex flex-col items-center justify-center gap-2 text-center text-on-surface-variant">
                     <CarFront aria-hidden="true" className="h-7 w-7 text-secondary/75" strokeWidth={1.5} />

@@ -189,6 +189,12 @@ html {
   will-change: transform;
 }
 
+@media (hover: none), (pointer: coarse) {
+  .marquee-viewport:active .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marquee-viewport {
     overflow-x: auto;

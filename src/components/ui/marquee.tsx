@@ -74,13 +74,13 @@ export function Marquee({
           } as React.CSSProperties
         }
       >
-        <div className="flex shrink-0 items-center gap-7 pr-7 sm:gap-16 sm:pr-16">
+        <div className="flex shrink-0 items-center gap-7 pr-7 sm:gap-10 sm:pr-10 lg:gap-8 lg:pr-8 xl:gap-10 xl:pr-10">
           {children}
         </div>
         <div
           aria-hidden="true"
           onMouseDownCapture={(event) => event.preventDefault()}
-          className="marquee-clone flex shrink-0 items-center gap-7 pr-7 sm:gap-16 sm:pr-16"
+          className="marquee-clone flex shrink-0 items-center gap-7 pr-7 sm:gap-10 sm:pr-10 lg:gap-8 lg:pr-8 xl:gap-10 xl:pr-10"
         >
           {visualClone}
         </div>
