@@ -117,6 +117,10 @@ export interface Translations {
     featuredPagination: string;
     previous: string;
     next: string;
+    channelPartner: string;
+    subscribeChannel: string;
+    watchOnYoutube: string;
+    hashtagsTitle: string;
   };
   instagramCard: {
     viewPost: string;
@@ -299,6 +303,10 @@ export const translations: Record<Language, Translations> = {
       featuredPagination: 'Paginação das novidades em destaque',
       previous: 'Anterior',
       next: 'Próxima',
+      channelPartner: 'Canal Parceiro',
+      subscribeChannel: 'Inscrever-se no Canal',
+      watchOnYoutube: 'Assistir no YouTube',
+      hashtagsTitle: 'Tags & Tópicos',
     },
     instagramCard: {
       viewPost: 'Ver no Instagram',
@@ -479,6 +487,10 @@ export const translations: Record<Language, Translations> = {
       featuredPagination: 'Featured Studio Diary pagination',
       previous: 'Previous',
       next: 'Next',
+      channelPartner: 'Partner Channel',
+      subscribeChannel: 'Subscribe to Channel',
+      watchOnYoutube: 'Watch on YouTube',
+      hashtagsTitle: 'Tags & Topics',
     },
     instagramCard: {
       viewPost: 'View on Instagram',
@@ -659,6 +671,10 @@ export const translations: Record<Language, Translations> = {
       featuredPagination: 'Seitennavigation der hervorgehobenen Neuigkeiten',
       previous: 'Zurück',
       next: 'Weiter',
+      channelPartner: 'Partner-Kanal',
+      subscribeChannel: 'Kanal abonnieren',
+      watchOnYoutube: 'Auf YouTube ansehen',
+      hashtagsTitle: 'Tags & Themen',
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',
