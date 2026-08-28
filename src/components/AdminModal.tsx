@@ -6,6 +6,7 @@ import { SupabaseService } from '../services/supabaseService';
 import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { curatedMetadataForModel } from '../data/collectionVehicles';
 import { normalizeImageFile } from '../utils/imageUtils';
+import DiaryAdminPanel from './DiaryAdminPanel';
 
 const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: 'draft', label: 'Rascunho' },
@@ -13,6 +14,12 @@ const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: 'reserved', label: 'Reservado' },
   { value: 'sold', label: 'Vendido' },
 ];
+
+type VehicleCollectionKind = 'studio' | 'guest';
+
+const GUEST_STATUS_OPTIONS = STATUS_OPTIONS.filter(
+  (option) => option.value === 'draft' || option.value === 'published'
+);
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -48,8 +55,9 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   }, []);
 
   // Mode & Tabs
-  const [activeTab, setActiveTab] = useState<'form' | 'express' | 'collection'>('express');
+  const [activeTab, setActiveTab] = useState<'form' | 'express' | 'collection' | 'diary'>('express');
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [registrationKind, setRegistrationKind] = useState<VehicleCollectionKind | null>(null);
 
   // Express Smart State (pre-seleção de Marca / Modelo / Ano)
   const [expressBrand, setExpressBrand] = useState('Volkswagen');
@@ -157,7 +165,11 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const [savedShareId, setSavedShareId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [pendingStatusVehicle, setPendingStatusVehicle] = useState<{ id: string; title: string } | null>(null);
+  const [pendingStatusVehicle, setPendingStatusVehicle] = useState<{
+    id: string;
+    title: string;
+    collectionKind: VehicleCollectionKind;
+  } | null>(null);
   // Histórico/curiosidades gerados pelo Cadastro Rápido (persistidos junto ao veículo)
   const [generatedHistory, setGeneratedHistory] = useState<string[]>([]);
   const [generatedCuriosities, setGeneratedCuriosities] = useState<string[]>([]);
@@ -306,6 +318,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
   const resetForm = () => {
     setEditingVehicleId(null);
+    setRegistrationKind(null);
     setTitle('');
     setSubtitle('');
     setShareId('');
@@ -330,6 +343,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
   const handleStartEditing = (v: CustomVehicle) => {
     playMechanicalClick('click');
     setEditingVehicleId(v.id);
+    setRegistrationKind(v.collectionKind === 'guest' ? 'guest' : 'studio');
     setTitle(v.title);
     setSubtitle(v.subtitle || '');
     setShareId(v.shareId);
@@ -356,7 +370,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     const spec = CustomVehicleService.generateSmartVehicleSpecs(brand, model, yr);
     setTitle(spec.title);
     setSubtitle(spec.subtitle);
-    setShareId(spec.shareId);
+    setShareId(registrationKind === 'guest' ? spec.shareId.replace(/^SRL-?/i, 'CONV-') : spec.shareId);
     setYear(spec.year);
     setEngine(spec.engine);
     setTransmission(spec.transmission);
@@ -385,17 +399,30 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     void performSave('draft');
   };
 
-  const confirmSaveWithStatus = (status: VehicleStatus) => {
+  const confirmSaveWithStatus = async (status: VehicleStatus) => {
     if (!pendingStatusVehicle) return;
+    if (pendingStatusVehicle.collectionKind === 'guest' && status !== 'draft' && status !== 'published') return;
     playMechanicalClick('click');
-    CustomVehicleService.updateCustomVehicle(pendingStatusVehicle.id, { status });
-    setVehicleStatus(status);
-    setPendingStatusVehicle(null);
-    refreshVehiclesList();
-    onVehicleAdded?.();
+    try {
+      await CustomVehicleService.updateCustomVehicle(pendingStatusVehicle.id, { status });
+      setVehicleStatus(status);
+      setPendingStatusVehicle(null);
+      refreshVehiclesList();
+      onVehicleAdded?.();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível atualizar o estado do veículo.');
+    }
   };
 
   const performSave = async (status: VehicleStatus) => {
+    if (!registrationKind) {
+      setSaveError('Escolha primeiro entre Veículo do Studio e Convidado do Studio.');
+      return;
+    }
+    if (registrationKind === 'guest' && status !== 'draft' && status !== 'published') {
+      setSaveError('Convidados só podem ficar como rascunho ou publicado.');
+      return;
+    }
     setSaving(true);
     setSaveError('');
 
@@ -412,8 +439,17 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
         uploadedUrls[slot] = url;
       }
 
-      const defaultShareId = shareId.trim() || `SRL-${title.substring(0, 3).toUpperCase()}-${year.trim()}`;
-      const defaultImage = uploadedUrls[0] || '/assets/images/vw-fusca-cal-style-1968.jpg';
+      const requestedShareId = shareId.trim();
+      const guestShareId = requestedShareId
+        ? `CONV-${requestedShareId.replace(/^(?:CONV|SRL)-?/i, '')}`
+        : `CONV-${title.substring(0, 3).toUpperCase()}-${year.trim()}`;
+      const defaultShareId = registrationKind === 'guest'
+        ? guestShareId
+        : requestedShareId || `SRL-${title.substring(0, 3).toUpperCase()}-${year.trim()}`;
+      if (registrationKind === 'guest' && !uploadedUrls[0]) {
+        throw new Error('Adicione uma foto principal real antes de publicar ou salvar um convidado.');
+      }
+      const defaultImage = uploadedUrls[0] || '/assets/images/af-logo-192.png';
       const defaultImage2 = uploadedUrls[1] || '';
       const defaultImage3 = uploadedUrls[2] || '';
       const gallery = uploadedUrls.slice(3, IMAGE_SLOTS).filter(Boolean) as string[];
@@ -421,16 +457,21 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       // 2. Salva o veículo (inclusão ou edição) com as URLs já confirmadas.
       let savedId = editingVehicleId;
       if (editingVehicleId) {
-        CustomVehicleService.updateCustomVehicle(editingVehicleId, {
+        await CustomVehicleService.updateCustomVehicle(editingVehicleId, {
           title: title.trim(),
-          subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
+          subtitle: subtitle.trim() || (registrationKind === 'guest'
+            ? `Convidado do Studio • ${year.trim()}`
+            : `Restauração Especial • ${year.trim()}`),
           shareId: defaultShareId,
           year: year.trim(),
-          engine: engine.trim() || 'Air-Cooled Boxer',
-          transmission: transmission.trim() || 'Manual 4 Marchas',
+          engine: engine.trim() || (registrationKind === 'guest' ? '' : 'Air-Cooled Boxer'),
+          transmission: transmission.trim() || (registrationKind === 'guest' ? '' : 'Manual 4 Marchas'),
           color: color.trim(),
           power: power.trim(),
-          description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          description: description.trim() || (registrationKind === 'guest'
+            ? 'Veículo convidado apresentado por amizade e interesse cultural.'
+            : 'Exemplar exclusivo da coleção Studio SenhorEle.'),
+          collectionKind: registrationKind,
           status,
           image: defaultImage,
           image2: defaultImage2,
@@ -441,16 +482,21 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
         });
         setSuccessMsg(`Veículo "${title.trim()}" atualizado com sucesso!`);
       } else {
-        const newVehicle = CustomVehicleService.addCustomVehicle({
+        const newVehicle = await CustomVehicleService.addCustomVehicle({
           title: title.trim(),
-          subtitle: subtitle.trim() || `Restauração Especial • ${year.trim()}`,
+          subtitle: subtitle.trim() || (registrationKind === 'guest'
+            ? `Convidado do Studio • ${year.trim()}`
+            : `Restauração Especial • ${year.trim()}`),
           shareId: defaultShareId,
           year: year.trim(),
-          engine: engine.trim() || 'Air-Cooled Boxer',
-          transmission: transmission.trim() || 'Manual 4 Marchas',
+          engine: engine.trim() || (registrationKind === 'guest' ? '' : 'Air-Cooled Boxer'),
+          transmission: transmission.trim() || (registrationKind === 'guest' ? '' : 'Manual 4 Marchas'),
           color: color.trim(),
           power: power.trim(),
-          description: description.trim() || 'Exemplar exclusivo da coleção Studio SenhorEle.',
+          description: description.trim() || (registrationKind === 'guest'
+            ? 'Veículo convidado apresentado por amizade e interesse cultural.'
+            : 'Exemplar exclusivo da coleção Studio SenhorEle.'),
+          collectionKind: registrationKind,
           status,
           image: defaultImage,
           image2: defaultImage2,
@@ -470,7 +516,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
       resetForm();
 
       if (savedId) {
-        setPendingStatusVehicle({ id: savedId, title: title.trim() });
+        setPendingStatusVehicle({ id: savedId, title: title.trim(), collectionKind: registrationKind });
       }
     } catch (err: any) {
       setSaveError(err?.message || 'Não foi possível salvar. Verifique a conexão.');
@@ -538,10 +584,15 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
     deleteButtonRef.current?.focus();
   };
 
-  const handleStatusChange = (vehicle: CustomVehicle, status: VehicleStatus) => {
-    CustomVehicleService.updateCustomVehicle(vehicle.id, { status });
-    refreshVehiclesList();
-    onVehicleAdded?.();
+  const handleStatusChange = async (vehicle: CustomVehicle, status: VehicleStatus) => {
+    if (vehicle.collectionKind === 'guest' && status !== 'draft' && status !== 'published') return;
+    try {
+      await CustomVehicleService.updateCustomVehicle(vehicle.id, { status });
+      refreshVehiclesList();
+      onVehicleAdded?.();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível atualizar o estado do veículo.');
+    }
   };
 
   if (!isOpen) return null;
@@ -651,7 +702,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 </div>
 
                 {/* Tabs: Form Completo vs Auto-Fill Inteligente */}
-                <nav aria-label="Seções administrativas" className="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl border border-surface-variant/30 sticky top-[82px] z-30">
+                <nav aria-label="Seções administrativas" className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-surface-container-low rounded-xl border border-surface-variant/30 sticky top-[82px] z-30">
                   <button
                     type="button"
                     onClick={() => {
@@ -693,6 +744,14 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     <span className="material-symbols-outlined text-[16px]">directions_car</span>
                     <span>Coleção</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => { playMechanicalClick('click'); setActiveTab('diary'); }}
+                    className={`min-h-11 px-3 py-2.5 rounded-lg font-label-caps text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-secondary ${activeTab === 'diary' ? 'text-parchment bg-surface-container-highest' : 'text-on-surface-variant hover:text-parchment'}`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">newspaper</span>
+                    <span>Diário</span>
+                  </button>
                 </nav>
 
                 {successMsg && (
@@ -705,8 +764,75 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                   </div>
                 )}
 
+                {(activeTab === 'form' || activeTab === 'express') && !editingVehicleId && !registrationKind && (
+                  <section aria-labelledby="registration-kind-heading" className="rounded-2xl border border-secondary/25 bg-surface-container/55 p-5 sm:p-6">
+                    <h2 id="registration-kind-heading" className="font-headline-md text-2xl text-parchment">
+                      Que tipo de veículo você vai cadastrar?
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+                      Essa escolha define onde a ficha será publicada e quais estados estarão disponíveis. Ela fica registrada junto ao veículo.
+                    </p>
+
+                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playMechanicalClick('click');
+                          setRegistrationKind('studio');
+                          setVehicleStatus('draft');
+                        }}
+                        className="group min-h-32 rounded-xl border border-surface-variant/50 bg-surface-container-low p-4 text-left transition-colors hover:border-secondary/70 hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                      >
+                        <span className="material-symbols-outlined text-2xl text-secondary" aria-hidden="true">garage_home</span>
+                        <span className="mt-3 block font-headline-md text-lg text-parchment">Veículo do Studio</span>
+                        <span className="mt-1 block text-xs leading-relaxed text-on-surface-variant">Integra o acervo e pode usar todos os estados comerciais da coleção.</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playMechanicalClick('click');
+                          setRegistrationKind('guest');
+                          setVehicleStatus('draft');
+                          setShareId((current) => current ? current.replace(/^SRL-?/i, 'CONV-') : current);
+                        }}
+                        className="group min-h-32 rounded-xl border border-secondary/35 bg-racing-green-dark/55 p-4 text-left transition-colors hover:border-secondary hover:bg-racing-green-dark/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                      >
+                        <span className="material-symbols-outlined text-2xl text-secondary" aria-hidden="true">handshake</span>
+                        <span className="mt-3 block font-headline-md text-lg text-parchment">Convidado do Studio</span>
+                        <span className="mt-1 block text-xs leading-relaxed text-on-surface-variant">Presença editorial independente, sem vínculo comercial e com compartilhamento próprio.</span>
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {(activeTab === 'form' || activeTab === 'express') && registrationKind && (
+                  <div className="flex flex-col gap-3 rounded-xl border border-secondary/20 bg-racing-green-dark/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-secondary" aria-hidden="true">
+                        {registrationKind === 'guest' ? 'handshake' : 'garage_home'}
+                      </span>
+                      <span className="font-label-caps text-xs text-parchment">
+                        {registrationKind === 'guest' ? 'Convidado do Studio' : 'Veículo do Studio'}
+                      </span>
+                    </div>
+                    {!editingVehicleId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playMechanicalClick('click');
+                          resetForm();
+                        }}
+                        className="min-h-10 self-start rounded-lg px-3 text-xs font-label-caps text-secondary hover:bg-surface-container sm:self-auto"
+                      >
+                        Trocar tipo
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* TAB 1: CADASTRO INTELIGENTE AUTO-FILL */}
-                {activeTab === 'express' && (
+                {activeTab === 'express' && registrationKind && (
                   <div className="p-4 bg-surface-container/50 border border-amber-500/30 rounded-2xl space-y-4">
                     <div className="flex items-center space-x-2 text-amber-300">
                       <span className="material-symbols-outlined text-[20px]">psychology</span>
@@ -920,7 +1046,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                 )}
 
                 {/* TAB 2 / FORMULÁRIO COMPLETO & EDIÇÃO */}
-                {activeTab === 'form' && (
+                {activeTab === 'form' && registrationKind && (
                   <form onSubmit={handleSubmitVehicle} className="space-y-4">
                     {editingVehicleId && (
                       <div className="p-3 bg-amber-950/60 border border-amber-500/60 rounded-xl flex items-center justify-between text-amber-200 text-xs font-label-caps">
@@ -967,9 +1093,13 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     <div>
                       <label htmlFor="vehicle-status" className="block font-label-caps text-xs text-on-surface-variant mb-1">Status na coleção</label>
                       <select id="vehicle-status" value={vehicleStatus} onChange={(e) => setVehicleStatus(e.target.value as VehicleStatus)} className="w-full px-3.5 py-2.5 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-secondary">
-                        {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        {(registrationKind === 'guest' ? GUEST_STATUS_OPTIONS : STATUS_OPTIONS).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
-                      <p className="mt-1.5 text-[11px] text-on-surface-variant">Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.</p>
+                      <p className="mt-1.5 text-[11px] text-on-surface-variant">
+                        {registrationKind === 'guest'
+                          ? 'Convidados podem ficar somente como rascunho ou publicado.'
+                          : 'Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.'}
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -990,7 +1120,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                           type="text"
                           value={shareId}
                           onChange={(e) => setShareId(e.target.value)}
-                          placeholder="Ex: SRL-FSC-1994 (gerado automático se vazio)"
+                          placeholder={registrationKind === 'guest' ? 'Ex: CONV-FSC-1994 (prefixo aplicado automaticamente)' : 'Ex: SRL-FSC-1994 (gerado automático se vazio)'}
                           className="w-full px-3.5 py-2 bg-surface-container border border-surface-variant/40 rounded-xl text-parchment text-xs focus:outline-none focus:border-secondary"
                         />
                       </div>
@@ -1207,12 +1337,17 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                               <div className="font-headline-md text-xs text-parchment font-bold truncate">
                                 {v.title}
                               </div>
+                              {v.collectionKind === 'guest' && (
+                                <span className="mt-1 inline-flex rounded-full border border-secondary/35 bg-racing-green-dark/55 px-2 py-0.5 font-label-caps text-[9px] text-secondary">
+                                  Convidado
+                                </span>
+                              )}
                               <div className="font-mono text-[10px] text-secondary truncate">
                                 #{v.shareId} • {v.year}
                               </div>
                               <span className="inline-block mt-1 text-[9px] font-label-caps text-on-surface-variant">{STATUS_OPTIONS.find((option) => option.value === v.status)?.label}</span>
                               <select aria-label={`Alterar status de ${v.title} no celular`} value={v.status} onChange={(e) => handleStatusChange(v, e.target.value as VehicleStatus)} className="md:hidden block mt-1 h-8 max-w-28 px-1 bg-surface-container border border-surface-variant/40 rounded-md text-[9px] text-parchment focus:outline-none focus:border-secondary">
-                                {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                {(v.collectionKind === 'guest' ? GUEST_STATUS_OPTIONS : STATUS_OPTIONS).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                               </select>
                             </div>
                           </div>
@@ -1224,7 +1359,7 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                             </div>
                             <div className="pointer-events-auto hidden md:block">
                               <select aria-label={`Alterar status de ${v.title}`} value={v.status} onChange={(e) => handleStatusChange(v, e.target.value as VehicleStatus)} className="h-9 px-2 bg-surface-container border border-surface-variant/40 rounded-lg text-[10px] text-parchment focus:outline-none focus:border-secondary">
-                                {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                {(v.collectionKind === 'guest' ? GUEST_STATUS_OPTIONS : STATUS_OPTIONS).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                               </select>
                             </div>
                             <div className="pointer-events-auto">
@@ -1253,6 +1388,7 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                     })}
                   </div>
                 </section>}
+                {activeTab === 'diary' && <DiaryAdminPanel />}
               </div>
             )}
           </main>
@@ -1271,7 +1407,7 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {STATUS_OPTIONS.map((option) => (
+                {(pendingStatusVehicle.collectionKind === 'guest' ? GUEST_STATUS_OPTIONS : STATUS_OPTIONS).map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -1285,7 +1421,11 @@ className={`flex items-center justify-between p-3 rounded-xl border transition-a
                   </button>
                 ))}
               </div>
-              <p className="mt-5 text-xs text-on-surface-variant">Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.</p>
+              <p className="mt-5 text-xs text-on-surface-variant">
+                {pendingStatusVehicle.collectionKind === 'guest'
+                  ? 'Convidados publicados aparecem em uma seção própria e nunca recebem estado comercial.'
+                  : 'Somente Publicado e Reservado aparecem no site. Novos veículos começam como rascunho.'}
+              </p>
               <div className="mt-5 flex justify-end">
                 <button type="button" onClick={closeStatusPrompt} className="min-h-11 px-4 rounded-xl text-xs font-label-caps text-on-surface-variant hover:bg-surface-container">Cancelar</button>
               </div>

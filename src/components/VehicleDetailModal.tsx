@@ -285,9 +285,13 @@ export default function VehicleDetailModal({
   const modalRef = useAccessibleModal<HTMLDivElement>(Boolean(vehicleId), onClose);
 
   let vehicle: VehicleDetail | null = vehicleId ? VEHICLE_DETAILS[vehicleId] : null;
+  const customVehicle = vehicleId
+    ? CustomVehicleService.getCustomVehicles().find((candidate) => candidate.id === vehicleId)
+    : undefined;
+  const isGuest = customVehicle?.collectionKind === 'guest';
 
   if (!vehicle && vehicleId) {
-    const customMatch = CustomVehicleService.getCustomVehicles().find((cv) => cv.id === vehicleId);
+    const customMatch = customVehicle;
     if (customMatch) {
       vehicle = {
         id: customMatch.id,
@@ -342,7 +346,9 @@ export default function VehicleDetailModal({
   const handleShare = async () => {
     playMechanicalClick('click');
     const shareUrl = vehicleShareUrl;
-    const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}`;
+    const shareText = isGuest
+      ? `Conheça este convidado do Studio SenhorEle: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}`
+      : `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}`;
 
     if (navigator.share) {
       try {
@@ -352,20 +358,26 @@ export default function VehicleDetailModal({
           url: shareUrl,
         });
         return;
-      } catch {
-        // Fallback to clipboard if share was dismissed or unsupported
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
 
-    navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt('Copie o link:', shareUrl);
+    }
   };
 
   const handleWhatsAppShare = () => {
     playMechanicalClick('click');
     const shareUrl = vehicleShareUrl;
-    const shareText = `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`;
+    const shareText = isGuest
+      ? `Conheça este convidado do Studio SenhorEle: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`
+      : `Confira este clássico no Studio Senhorele: ${vehicle.title} (${vehicle.year}) - ID: #${vehicle.shareId}\n${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
   };
 
@@ -474,7 +486,7 @@ export default function VehicleDetailModal({
               {/* Title & Subtitle overlay */}
               <div className="absolute bottom-4 left-6 right-6">
                 <span className="font-label-caps text-xs text-secondary tracking-widest uppercase block mb-1">
-                  Studio Senhorele • Curadoria
+                  {isGuest ? 'Convidado do Studio • Presença editorial' : 'Studio Senhorele • Curadoria'}
                 </span>
                 <h2
                   id="vehicle-detail-title"
@@ -490,6 +502,19 @@ export default function VehicleDetailModal({
 
             {/* Scrollable Content Body */}
             <div className="p-6 sm:p-8 space-y-8 overflow-y-auto custom-scrollbar">
+              {isGuest && (
+                <aside className="rounded-xl border border-secondary/35 bg-racing-green-dark/45 p-4" aria-label="Informação sobre o veículo convidado">
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined mt-0.5 text-[20px] text-secondary" aria-hidden="true">handshake</span>
+                    <div>
+                      <p className="font-label-caps text-xs text-secondary">Convidado do Studio</p>
+                      <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">
+                        Veículo convidado, apresentado por amizade e interesse cultural. Não integra o acervo e não possui vínculo comercial com o Studio SenhorEle.
+                      </p>
+                    </div>
+                  </div>
+                </aside>
+              )}
               {/* Overview Description */}
               {vehicle.description && (
                 <div className="space-y-3">
@@ -631,7 +656,7 @@ export default function VehicleDetailModal({
               )}
 
               {/* Ask a Question via WhatsApp */}
-              <div className="space-y-4 max-w-xl">
+              {!isGuest && <div className="space-y-4 max-w-xl">
                 <h3 className="font-headline-md text-xl text-parchment flex items-center space-x-2 border-b border-surface-variant/30 pb-2">
                   <span className="material-symbols-outlined text-secondary">help</span>
                   <span>{t.vehicleDetail.doubtTitle}</span>
@@ -667,7 +692,7 @@ export default function VehicleDetailModal({
                     <span>{t.vehicleDetail.doubtSendButton}</span>
                   </motion.button>
                 </div>
-              </div>
+              </div>}
             </div>
             <AnimatePresence>
               {copied && (
@@ -684,8 +709,33 @@ export default function VehicleDetailModal({
             </AnimatePresence>
 
             {/* Footer Actions */}
-            <div className="p-4 sm:p-6 bg-surface-container-low border-t border-surface-variant/30 flex items-center justify-center sm:justify-end shrink-0">
-              <motion.a
+            <div className="p-4 sm:p-6 bg-surface-container-low border-t border-surface-variant/30 flex flex-wrap items-center justify-center gap-3 sm:justify-end shrink-0">
+              {isGuest ? (
+                <>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => void handleShare()}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-sm font-bold font-label-caps text-deep-charcoal transition-colors hover:bg-amber-glow sm:w-auto"
+                  >
+                    <span className="material-symbols-outlined text-[19px]" aria-hidden="true">share</span>
+                    <span>Compartilhar convidado</span>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={handleWhatsAppShare}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#25D366]/55 px-6 text-sm font-bold font-label-caps text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-white sm:w-auto"
+                  >
+                    <span className="material-symbols-outlined text-[19px]" aria-hidden="true">send</span>
+                    <span>Compartilhar no WhatsApp</span>
+                  </motion.button>
+                </>
+              ) : <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ duration: 0.15 }}
@@ -704,6 +754,7 @@ export default function VehicleDetailModal({
                 </svg>
                 <span>Falar no WhatsApp sobre este Veículo</span>
               </motion.a>
+              }
             </div>
           </motion.div>
         </div>

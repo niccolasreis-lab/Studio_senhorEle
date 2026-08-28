@@ -19,6 +19,7 @@ export interface CustomVehicle {
   description?: string;
   isCustom?: boolean;
   status: VehicleStatus;
+  collectionKind?: CollectionKind;
   // Campos gerados automaticamente pela ficha (especificações, história etc.).
   // Só são preenchidos quando há informação confiável; ausência = ocultar na UI.
   specs?: { label: string; value: string }[];
@@ -29,9 +30,29 @@ export interface CustomVehicle {
 }
 
 export type VehicleStatus = 'draft' | 'published' | 'reserved' | 'sold';
+export type CollectionKind = 'studio' | 'guest';
 
 export const normalizeVehicleStatus = (status?: string): VehicleStatus =>
   status === 'draft' || status === 'reserved' || status === 'sold' ? status : 'published';
+
+export const normalizeCollectionKind = (kind?: string): CollectionKind =>
+  kind === 'guest' ? 'guest' : 'studio';
+
+export const normalizeVehicleForCollection = <T extends Pick<CustomVehicle, 'status' | 'shareId' | 'collectionKind'>>(
+  vehicle: T,
+): T & { collectionKind: CollectionKind; status: VehicleStatus } => {
+  const collectionKind = normalizeCollectionKind(vehicle.collectionKind);
+  const normalizedStatus = normalizeVehicleStatus(vehicle.status);
+  const status = collectionKind === 'guest' && (normalizedStatus === 'reserved' || normalizedStatus === 'sold')
+    ? 'draft'
+    : normalizedStatus;
+  const cleanShareId = vehicle.shareId.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 96);
+  const shareId = collectionKind === 'guest' && !cleanShareId.startsWith('CONV-')
+    ? `CONV-${cleanShareId.replace(/^(SRL-|CONV-)/, '')}`
+    : cleanShareId;
+
+  return { ...vehicle, collectionKind, status, shareId };
+};
 
 export const INITIAL_DEFAULT_VEHICLES: CustomVehicle[] = [
   {
@@ -175,7 +196,7 @@ export const CustomVehicleService = {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       const customList: CustomVehicle[] = data
-        ? JSON.parse(data).map((vehicle: CustomVehicle) => ({ ...vehicle, status: normalizeVehicleStatus(vehicle.status) }))
+        ? JSON.parse(data).map((vehicle: CustomVehicle) => normalizeVehicleForCollection(vehicle))
         : [];
       const deletedIds = this.getDeletedIds();
 
@@ -270,7 +291,7 @@ export const CustomVehicleService = {
     return this.getCustomVehicles();
   },
 
-  addCustomVehicle(vehicleData: Omit<CustomVehicle, 'id' | 'isCustom'>): CustomVehicle {
+  async addCustomVehicle(vehicleData: Omit<CustomVehicle, 'id' | 'isCustom'>): Promise<CustomVehicle> {
     const vehicles = this.getCustomVehicles();
     const cleanSlug = vehicleData.title
       .toLowerCase()
@@ -278,19 +299,19 @@ export const CustomVehicleService = {
       .replace(/^-|-$/g, '');
     
     const uniqueId = `custom-${cleanSlug}-${Date.now()}`;
-      const newVehicle: CustomVehicle = {
+      const newVehicle: CustomVehicle = normalizeVehicleForCollection({
         ...vehicleData,
         id: uniqueId,
         isCustom: true,
         status: vehicleData.status || 'draft',
-    };
+        collectionKind: normalizeCollectionKind(vehicleData.collectionKind),
+      });
+
+    const persisted = await SupabaseService.insertVehicle(newVehicle);
+    if (!persisted) throw new Error('Não foi possível persistir o veículo no Supabase. Nenhuma confirmação foi gravada localmente.');
 
     vehicles.unshift(newVehicle);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
-    
-    SupabaseService.insertVehicle(newVehicle).catch((err) =>
-      console.warn('Supabase cloud push notice:', err)
-    );
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated', { detail: newVehicle }));
@@ -299,22 +320,21 @@ export const CustomVehicleService = {
     return newVehicle;
   },
 
-  updateCustomVehicle(id: string, updatedData: Partial<CustomVehicle>): CustomVehicle | null {
+  async updateCustomVehicle(id: string, updatedData: Partial<CustomVehicle>): Promise<CustomVehicle | null> {
     const vehicles = this.getCustomVehicles();
     const index = vehicles.findIndex((v) => v.id === id);
     if (index === -1) return null;
 
-    const updatedVehicle: CustomVehicle = {
+    const updatedVehicle: CustomVehicle = normalizeVehicleForCollection({
       ...vehicles[index],
       ...updatedData,
-    };
+    });
+
+    const persisted = await SupabaseService.insertVehicle(updatedVehicle);
+    if (!persisted) throw new Error('Não foi possível atualizar o veículo no Supabase. A versão local foi preservada.');
 
     vehicles[index] = updatedVehicle;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
-
-    SupabaseService.insertVehicle(updatedVehicle).catch((err) =>
-      console.warn('Supabase update push notice:', err)
-    );
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('studio_custom_vehicle_updated', { detail: updatedVehicle }));

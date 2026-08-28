@@ -8,8 +8,9 @@ import { CustomVehicleService, VehicleStatus } from '../services/customVehicleSe
 import { buildWhatsAppLink } from '../config/contact';
 import { buildShareUrl } from '../utils/share';
 import { webpImageUrl } from '../utils/imageUtils';
+import GuestsCollection from './GuestsCollection';
 
-interface CarItem {
+export interface CollectionVehicleItem {
   id: string;
   shareId: string;
   title: string;
@@ -20,6 +21,7 @@ interface CarItem {
   transmission?: string;
   description?: string;
   status: VehicleStatus;
+  collectionKind: 'studio' | 'guest';
 }
 
 interface CollectionProps {
@@ -28,7 +30,7 @@ interface CollectionProps {
 }
 
 interface IntersectionObserverGridCardProps {
-  item: CarItem;
+  item: CollectionVehicleItem;
   index: number;
   onOpenDetail?: (vehicleId: string) => void;
   onSelectCarForInquiry?: (carName: string) => void;
@@ -232,7 +234,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
 
-  const handleShareCarousel = async (item: CarItem) => {
+  const handleShareCarousel = async (item: CollectionVehicleItem) => {
     playMechanicalClick('click');
     const shareUrl = buildShareUrl(item.shareId);
     const shareText = `Confira este clássico no Studio Senhorele: ${item.title} (#${item.shareId})`;
@@ -266,7 +268,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
     'fusca',
   ];
 
-  const [customVehicles, setCustomVehicles] = useState<CarItem[]>(() =>
+  const [customVehicles, setCustomVehicles] = useState<CollectionVehicleItem[]>(() =>
     CustomVehicleService.getCustomVehicles()
       .filter((v) => v.status === 'published' || v.status === 'reserved')
       .map((v) => ({
@@ -280,6 +282,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
       image: v.image,
       description: v.description,
       status: v.status,
+      collectionKind: v.collectionKind === 'guest' ? 'guest' : 'studio',
     }))
   );
 
@@ -297,6 +300,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
       image: v.image,
       description: v.description,
       status: v.status,
+      collectionKind: v.collectionKind === 'guest' ? 'guest' : 'studio',
     }));
     setCustomVehicles(fresh);
   };
@@ -319,7 +323,10 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
 
   // A lista do serviço já inclui os veículos base. Usar uma segunda coleção
   // aqui duplicaria os clássicos e impediria que o status os ocultasse.
-  const allItems = customVehicles;
+  const allItems = customVehicles.filter((vehicle) => vehicle.collectionKind !== 'guest');
+  const guestItems = customVehicles.filter(
+    (vehicle) => vehicle.collectionKind === 'guest' && vehicle.status === 'published'
+  );
 
   const filteredItems = allItems.filter((item) => {
     const query = searchQuery.toLowerCase().trim();
@@ -398,6 +405,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
   };
 
   return (
+    <>
     <motion.section
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -762,6 +770,8 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
         </div>
       )}
     </motion.section>
+    <GuestsCollection items={guestItems} onOpenDetail={onOpenDetail} />
+    </>
   );
 });
 

@@ -147,6 +147,28 @@ Além do build, valide manualmente:
 
 ## Deploy
 
+### Diário do Studio e sincronização social
+
+A Edge Function `sync-social` importa e publica automaticamente as publicações
+permanentes dos canais configurados. O primeiro ciclo considera apenas os 30 dias
+anteriores; itens rejeitados pelo administrador não são recriados pela sincronização.
+
+1. Confirme que o projeto selecionado é `rucqvvollyrlgyekoelq`.
+2. Aplique, em ordem, as migrations `20260828101459_add_guests_and_studio_diary.sql`
+   e `20260828114542_auto_publish_studio_diary.sql`.
+3. Configure `YOUTUBE_API_KEY`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID` e
+   `SYNC_CRON_SECRET` como secrets da Edge Function.
+4. Publique com `supabase functions deploy sync-social --no-verify-jwt`. A função
+   aplica sua própria autorização: segredo constante do cron ou JWT de administrador;
+   sem uma dessas credenciais, responde `401`.
+5. Copie `supabase/social-sync-setup.example.sql`, substitua o placeholder pelo
+   mesmo `SYNC_CRON_SECRET` e execute no SQL Editor para ativar Vault e o cron horário.
+6. Restrinja a chave Google exclusivamente à YouTube Data API v3 e valide a
+   primeira execução pela aba Diário.
+
+Tokens do Instagram, chave de serviço e segredo do cron nunca devem ser colocados
+em variáveis `VITE_*`, no `localStorage` ou em arquivos versionados.
+
 O projeto é publicado na Vercel. O arquivo [vercel.json](./vercel.json) direciona todas as rotas para `index.html`, permitindo acesso direto às rotas da SPA, incluindo `/admin`.
 
 Antes do deploy, confirme que as migrations necessárias já foram aplicadas e que o usuário administrador está ativo. O frontend nunca deve ser publicado contendo senha fixa ou chave secreta.

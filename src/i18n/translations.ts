@@ -3,6 +3,9 @@ export type Language = 'pt' | 'en' | 'de';
 export interface Translations {
   nav: {
     collection: string;
+    guests: string;
+    diary: string;
+    studio: string;
     about: string;
     purpose: string;
     partners: string;
@@ -62,22 +65,58 @@ export interface Translations {
     noResultsTitle: string;
     noResultsText: string;
   };
+  guests: {
+    title: string;
+    description: string;
+    badge: string;
+    disclaimer: string;
+    openDetails: string;
+    share: string;
+    copied: string;
+    shareText: string;
+    copyPrompt: string;
+    whatsappLabel: string;
+    empty: string;
+  };
   partners: {
     title: string;
     description: string;
     actionLabel: string;
     instagramDestination: string;
     websiteDestination: string;
+    youtubeDestination: string;
     fallbackLabel: string;
     newTabLabel: string;
     peluciaImageAlt: string;
     lobatoImageAlt: string;
+    fuscaNaFotoImageAlt: string;
     categories: {
       detailing: string;
       automotiveServices: string;
       mechanicsAndElectrical: string;
       performanceAndTechnology: string;
+      youtubePartner: string;
     };
+  };
+  diary: {
+    title: string;
+    description: string;
+    recommendation: string;
+    manual: string;
+    loading: string;
+    error: string;
+    retry: string;
+    empty: string;
+    playVideo: string;
+    openOriginal: string;
+    share: string;
+    copied: string;
+    viewArchive: string;
+    hideArchive: string;
+    archivePagination: string;
+    featuredPagination: string;
+    previous: string;
+    next: string;
   };
   instagramCard: {
     viewPost: string;
@@ -147,6 +186,9 @@ export const translations: Record<Language, Translations> = {
   pt: {
     nav: {
       collection: 'Coleção',
+      guests: 'Convidados',
+      diary: 'Diário do Studio',
+      studio: 'O Studio',
       about: 'Nossa História',
       purpose: 'Propósito',
       partners: 'Parceiros',
@@ -205,22 +247,58 @@ export const translations: Record<Language, Translations> = {
       noResultsTitle: 'Nenhum clássico encontrado',
       noResultsText: 'Tente ajustar os termos de busca ou selecionar outro filtro acima.',
     },
+    guests: {
+      title: 'Convidados do Studio',
+      description: 'Histórias e automóveis de amigos que compartilham conosco o cuidado pela cultura automotiva. Cada presença é editorial e independente do acervo do Studio.',
+      badge: 'Convidado',
+      disclaimer: 'Veículo convidado, apresentado por amizade e interesse cultural. Não integra o acervo e não possui vínculo comercial com o Studio SenhorEle.',
+      openDetails: 'Ver ficha',
+      share: 'Compartilhar',
+      copied: 'Link copiado',
+      shareText: 'Conheça este convidado do Studio SenhorEle',
+      copyPrompt: 'Copie o link deste convidado:',
+      whatsappLabel: 'Compartilhar no WhatsApp',
+      empty: 'Nenhum veículo convidado foi publicado até o momento.',
+    },
     partners: {
       title: 'Parceiros',
       description: 'Profissionais e empresas que compartilham nossa paixão pelo universo automotivo.',
       actionLabel: 'Conhecer parceiro',
       instagramDestination: 'Ver Instagram',
       websiteDestination: 'Visitar website',
+      youtubeDestination: 'Ver canal no YouTube',
       fallbackLabel: 'Identidade visual em atualização',
       newTabLabel: 'abre em nova guia',
       peluciaImageAlt: 'Imagem histórica automotiva fornecida para a Pelúcia Estética Automotiva',
       lobatoImageAlt: 'Imagem representativa dos serviços automotivos de Lobato Gui',
+      fuscaNaFotoImageAlt: 'Imagem do canal parceiro Fusca na Foto',
       categories: {
         detailing: 'Estética automotiva',
         automotiveServices: 'Serviços automotivos',
         mechanicsAndElectrical: 'Mecânica e elétrica automotiva',
         performanceAndTechnology: 'Preparação e tecnologia automotiva',
+        youtubePartner: 'Canal parceiro · indicações automotivas',
       },
+    },
+    diary: {
+      title: 'Diário do Studio',
+      description: 'Novidades, encontros e histórias do Studio SenhorEle, além de indicações escolhidas de parceiros do universo automotivo.',
+      recommendation: 'Indicação',
+      manual: 'Studio SenhorEle',
+      loading: 'Carregando novidades…',
+      error: 'Não foi possível carregar o Diário agora. Tente novamente mais tarde.',
+      retry: 'Tentar novamente',
+      empty: 'Ainda não há novidades publicadas. Volte em breve.',
+      playVideo: 'Reproduzir vídeo',
+      openOriginal: 'Ver publicação original',
+      share: 'Compartilhar',
+      copied: 'Link copiado',
+      viewArchive: 'Ver arquivo',
+      hideArchive: 'Ocultar arquivo',
+      archivePagination: 'Paginação do arquivo do Diário',
+      featuredPagination: 'Paginação das novidades em destaque',
+      previous: 'Anterior',
+      next: 'Próxima',
     },
     instagramCard: {
       viewPost: 'Ver no Instagram',
@@ -288,6 +366,9 @@ export const translations: Record<Language, Translations> = {
   en: {
     nav: {
       collection: 'Collection',
+      guests: 'Studio Guests',
+      diary: 'Studio Diary',
+      studio: 'The Studio',
       about: 'Our Story',
       purpose: 'Purpose',
       partners: 'Partners',
@@ -346,22 +427,58 @@ export const translations: Record<Language, Translations> = {
       noResultsTitle: 'No classic vehicles found',
       noResultsText: 'Try adjusting your search query or selecting a different filter above.',
     },
+    guests: {
+      title: 'Studio Guests',
+      description: 'Stories and automobiles from friends who share our care for automotive culture. Each appearance is editorial and independent from the Studio collection.',
+      badge: 'Guest',
+      disclaimer: 'Guest vehicle presented through friendship and cultural interest. It is not part of the collection and has no commercial relationship with Studio SenhorEle.',
+      openDetails: 'View details',
+      share: 'Share',
+      copied: 'Link copied',
+      shareText: 'Meet this Studio SenhorEle guest',
+      copyPrompt: 'Copy this guest link:',
+      whatsappLabel: 'Share on WhatsApp',
+      empty: 'No guest vehicles have been published yet.',
+    },
     partners: {
       title: 'Partners',
       description: 'Professionals and companies who share our passion for the automotive world.',
       actionLabel: 'Meet partner',
       instagramDestination: 'View Instagram',
       websiteDestination: 'Visit website',
+      youtubeDestination: 'View YouTube channel',
       fallbackLabel: 'Visual identity being updated',
       newTabLabel: 'opens in a new tab',
       peluciaImageAlt: 'Historic automotive image provided for Pelúcia Estética Automotiva',
       lobatoImageAlt: 'Representative image of Lobato Gui automotive services',
+      fuscaNaFotoImageAlt: 'Image from partner channel Fusca na Foto',
       categories: {
         detailing: 'Automotive detailing',
         automotiveServices: 'Automotive services',
         mechanicsAndElectrical: 'Automotive mechanics and electrical',
         performanceAndTechnology: 'Automotive performance and technology',
+        youtubePartner: 'Partner channel · automotive recommendations',
       },
+    },
+    diary: {
+      title: 'Studio Diary',
+      description: 'News, gatherings and stories from Studio SenhorEle, together with selected recommendations from automotive partners.',
+      recommendation: 'Recommendation',
+      manual: 'Studio SenhorEle',
+      loading: 'Loading updates…',
+      error: 'The Diary could not be loaded right now. Please try again later.',
+      retry: 'Try again',
+      empty: 'There are no published updates yet. Check back soon.',
+      playVideo: 'Play video',
+      openOriginal: 'View original post',
+      share: 'Share',
+      copied: 'Link copied',
+      viewArchive: 'View archive',
+      hideArchive: 'Hide archive',
+      archivePagination: 'Studio Diary archive pagination',
+      featuredPagination: 'Featured Studio Diary pagination',
+      previous: 'Previous',
+      next: 'Next',
     },
     instagramCard: {
       viewPost: 'View on Instagram',
@@ -429,6 +546,9 @@ export const translations: Record<Language, Translations> = {
   de: {
     nav: {
       collection: 'Kollektion',
+      guests: 'Studio-Gäste',
+      diary: 'Studio-Tagebuch',
+      studio: 'Das Studio',
       about: 'Über uns',
       purpose: 'Philosophie',
       partners: 'Partner',
@@ -487,22 +607,58 @@ export const translations: Record<Language, Translations> = {
       noResultsTitle: 'Keine Klassiker gefunden',
       noResultsText: 'Bitte passen Sie Ihre Suchanfrage oder den gewählten Filter an.',
     },
+    guests: {
+      title: 'Gäste des Studios',
+      description: 'Geschichten und Fahrzeuge von Freunden, die unsere Wertschätzung für automobile Kultur teilen. Jeder Auftritt ist redaktionell und unabhängig von der Studio-Sammlung.',
+      badge: 'Gastfahrzeug',
+      disclaimer: 'Dieses Gastfahrzeug wird aus Freundschaft und kulturellem Interesse vorgestellt. Es gehört nicht zur Sammlung und steht in keiner geschäftlichen Beziehung zum Studio SenhorEle.',
+      openDetails: 'Details ansehen',
+      share: 'Teilen',
+      copied: 'Link kopiert',
+      shareText: 'Entdecken Sie dieses Gastfahrzeug des Studio SenhorEle',
+      copyPrompt: 'Link zu diesem Gastfahrzeug kopieren:',
+      whatsappLabel: 'Über WhatsApp teilen',
+      empty: 'Derzeit sind noch keine Gastfahrzeuge veröffentlicht.',
+    },
     partners: {
       title: 'Partner',
       description: 'Fachleute und Unternehmen, die unsere Leidenschaft für die automobile Welt teilen.',
       actionLabel: 'Partner kennenlernen',
       instagramDestination: 'Instagram ansehen',
       websiteDestination: 'Website besuchen',
+      youtubeDestination: 'YouTube-Kanal ansehen',
       fallbackLabel: 'Visuelle Identität wird aktualisiert',
       newTabLabel: 'wird in einem neuen Tab geöffnet',
       peluciaImageAlt: 'Historisches Automobilbild, bereitgestellt für Pelúcia Estética Automotiva',
       lobatoImageAlt: 'Repräsentatives Bild der Automobildienstleistungen von Lobato Gui',
+      fuscaNaFotoImageAlt: 'Bild des Partnerkanals Fusca na Foto',
       categories: {
         detailing: 'Fahrzeugaufbereitung',
         automotiveServices: 'Automobildienstleistungen',
         mechanicsAndElectrical: 'Kfz-Mechanik und -Elektrik',
         performanceAndTechnology: 'Fahrzeugoptimierung und -technologie',
+        youtubePartner: 'Partnerkanal · automobile Empfehlungen',
       },
+    },
+    diary: {
+      title: 'Studio-Tagebuch',
+      description: 'Neuigkeiten, Treffen und Geschichten des Studio SenhorEle sowie ausgewählte Empfehlungen von Partnern aus der Automobilwelt.',
+      recommendation: 'Empfehlung',
+      manual: 'Studio SenhorEle',
+      loading: 'Neuigkeiten werden geladen…',
+      error: 'Das Tagebuch kann momentan nicht geladen werden. Bitte versuchen Sie es später erneut.',
+      retry: 'Erneut versuchen',
+      empty: 'Noch wurden keine Neuigkeiten veröffentlicht. Schauen Sie bald wieder vorbei.',
+      playVideo: 'Video abspielen',
+      openOriginal: 'Originalbeitrag ansehen',
+      share: 'Teilen',
+      copied: 'Link kopiert',
+      viewArchive: 'Archiv ansehen',
+      hideArchive: 'Archiv ausblenden',
+      archivePagination: 'Seitennavigation im Studio-Tagebuch-Archiv',
+      featuredPagination: 'Seitennavigation der hervorgehobenen Neuigkeiten',
+      previous: 'Zurück',
+      next: 'Weiter',
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',

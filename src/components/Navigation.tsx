@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useScroll, useSpring } from 'motion/react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { playMechanicalClick } from '../utils/audio';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -9,250 +10,159 @@ interface NavigationProps {
   onOpenInquire?: () => void;
 }
 
-export default function Navigation({ onOpenInquire }: NavigationProps) {
+export default function Navigation({ onOpenInquire: _onOpenInquire }: NavigationProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-
+  const studioMenuRef = useRef<HTMLLIElement>(null);
+  const studioButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!studioOpen && !isOpen) return;
+    const closeOutside = (event: MouseEvent) => {
+      if (studioOpen && !studioMenuRef.current?.contains(event.target as Node)) setStudioOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (studioOpen) studioButtonRef.current?.focus();
+      else if (isOpen) mobileButtonRef.current?.focus();
+      setStudioOpen(false);
+      setIsOpen(false);
+    };
+    document.addEventListener('mousedown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen, studioOpen]);
+
   const scrollToSection = (targetId: string) => {
     const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      const navHeight = 80;
-      const elementPosition = targetElement.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - navHeight;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth',
-      });
-    }
+    if (!targetElement) return;
+    const navHeight = 80;
+    const offsetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - navHeight;
+    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
   };
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
-    e.preventDefault();
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    event.preventDefault();
     playMechanicalClick('click');
     setIsOpen(false);
-    
-    setTimeout(() => {
-      scrollToSection(targetId);
-    }, 50);
-
+    setStudioOpen(false);
+    window.setTimeout(() => scrollToSection(targetId), 50);
     window.history.pushState(null, '', `#${targetId}`);
   };
 
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
-    if (hash) {
-      setTimeout(() => {
-        scrollToSection(hash);
-      }, 200);
-    }
+    if (!hash) return;
+    let observer: MutationObserver | null = null;
+    let timeoutId: number | undefined;
+    const tryScroll = () => {
+      if (!document.getElementById(hash)) return false;
+      scrollToSection(hash);
+      observer?.disconnect();
+      if (timeoutId) window.clearTimeout(timeoutId);
+      return true;
+    };
+    const initialId = window.setTimeout(() => {
+      if (tryScroll()) return;
+      observer = new MutationObserver(tryScroll);
+      observer.observe(document.body, { childList: true, subtree: true });
+      timeoutId = window.setTimeout(() => observer?.disconnect(), 4000);
+    }, 100);
+    return () => {
+      window.clearTimeout(initialId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+      observer?.disconnect();
+    };
   }, []);
+
+  const desktopLinkClass = 'inline-flex min-h-10 items-center px-2 font-label-caps text-sm tracking-wide text-on-surface-variant transition-colors hover:text-amber-glow focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-secondary';
+  const mobileLinkClass = 'block min-h-11 rounded-lg px-2 py-3 font-label-caps text-base tracking-wide text-on-surface-variant transition-colors hover:bg-surface-container hover:text-amber-glow focus-visible:outline-2 focus-visible:outline-secondary';
 
   return (
     <>
-      {/* Scroll Progress Indicator Bar */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-secondary via-amber-glow to-secondary z-[60] origin-left shadow-[0_0_10px_rgba(176,131,50,0.5)]"
-        style={{ scaleX }}
-      />
-
-      <nav
-        className={`fixed w-full z-40 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-background/95 backdrop-blur-md border-b border-surface-variant/30 shadow-xl py-3'
-            : 'bg-background/40 backdrop-blur-sm py-5'
-        }`}
-      >
-        <div className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-          <a href="#" aria-label="Studio SenhorEle - Início" className="flex items-center space-x-3 group">
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border border-secondary/40 shadow-md flex items-center justify-center bg-surface-container-low group-hover:border-secondary transition-all">
-              <img 
-                src="/assets/images/logo-senhorele-hero.png"
-                alt="Logotipo Studio SenhorEle"
-                width="192"
-                height="192"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
+      <motion.div className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-gradient-to-r from-secondary via-amber-glow to-secondary shadow-[0_2px_10px_rgba(176,131,50,0.42)]" style={{ scaleX }} />
+      <nav aria-label="Navegação principal" className={`fixed z-40 w-full transition-all duration-300 ${isScrolled ? 'border-b border-surface-variant/30 bg-background/95 py-2 shadow-xl backdrop-blur-md' : 'bg-background/55 py-3 backdrop-blur-sm'}`}>
+        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-margin-mobile md:px-margin-desktop">
+          <a href="/" aria-label="Studio SenhorEle — início" className="group flex shrink-0 items-center">
+            <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-secondary/40 bg-surface-container-low shadow-md transition-colors group-hover:border-secondary md:h-16 md:w-16">
+              <img src="/assets/images/logo-senhorele-hero.png" alt="Logotipo Studio SenhorEle" width="192" height="192" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            </span>
           </a>
 
-          <ul className="hidden lg:flex lg:space-x-6 xl:space-x-8 items-center">
-            <li>
-              <motion.a 
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={(e) => handleNavClick(e, 'collection')}
-                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
-                href="#collection"
+          <ul className="hidden items-center gap-1 lg:flex xl:gap-2">
+            <li><a href="#collection" onClick={(event) => handleNavClick(event, 'collection')} className={desktopLinkClass}>{t.nav.collection}</a></li>
+            <li><a href="#guests" onClick={(event) => handleNavClick(event, 'guests')} className={desktopLinkClass}>{t.nav.guests}</a></li>
+            <li><a href="#diario" onClick={(event) => handleNavClick(event, 'diario')} className={desktopLinkClass}>{t.nav.diary}</a></li>
+            <li ref={studioMenuRef} className="relative">
+              <button
+                ref={studioButtonRef}
+                type="button"
+                aria-expanded={studioOpen}
+                aria-haspopup="true"
+                aria-controls="studio-navigation-menu"
+                onClick={() => { playMechanicalClick('click'); setStudioOpen((value) => !value); }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowDown') return;
+                  event.preventDefault();
+                  setStudioOpen(true);
+                  window.requestAnimationFrame(() => studioMenuRef.current?.querySelector<HTMLAnchorElement>('a')?.focus());
+                }}
+                className={`${desktopLinkClass} gap-1`}
               >
-                {t.nav.collection}
-              </motion.a>
-            </li>
-            <li>
-              <motion.a 
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={(e) => handleNavClick(e, 'about')}
-                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
-                href="#about"
-              >
-                {t.nav.about}
-              </motion.a>
-            </li>
-            <li>
-              <motion.a 
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={(e) => handleNavClick(e, 'purpose')}
-                className="font-label-caps text-xs sm:text-xs md:text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-1.5 sm:px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer" 
-                href="#purpose"
-              >
-                {t.nav.purpose}
-              </motion.a>
-            </li>
-            <li>
-              <motion.a
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                onClick={(e) => handleNavClick(e, 'partners')}
-                className="font-label-caps text-sm lg:text-base text-on-surface-variant hover:text-amber-glow transition-colors duration-300 inline-block px-2 py-1 tracking-wider whitespace-nowrap cursor-pointer"
-                href="#partners"
-              >
-                {t.nav.partners}
-              </motion.a>
+                {t.nav.studio}<ChevronDown size={15} aria-hidden="true" className={`transition-transform ${studioOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {studioOpen && (
+                <div id="studio-navigation-menu" className="absolute left-1/2 mt-2 w-52 -translate-x-1/2 rounded-xl border border-surface-variant/45 bg-background p-2 shadow-[0_16px_38px_rgba(0,0,0,0.48)]">
+                  <a href="#about" onClick={(event) => handleNavClick(event, 'about')} className="block min-h-10 rounded-lg px-3 py-2.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-parchment focus-visible:outline-2 focus-visible:outline-secondary">{t.nav.about}</a>
+                  <a href="#purpose" onClick={(event) => handleNavClick(event, 'purpose')} className="block min-h-10 rounded-lg px-3 py-2.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-parchment focus-visible:outline-2 focus-visible:outline-secondary">{t.nav.purpose}</a>
+                  <a href="#partners" onClick={(event) => handleNavClick(event, 'partners')} className="block min-h-10 rounded-lg px-3 py-2.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-parchment focus-visible:outline-2 focus-visible:outline-secondary">{t.nav.partners}</a>
+                </div>
+              )}
             </li>
           </ul>
 
-          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher />
-
-            <motion.a 
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              href={buildWhatsAppLink('')}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => playMechanicalClick('click')}
-              className="hidden xl:flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-base px-6 py-3 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer shadow-md font-semibold tracking-wider whitespace-nowrap"
-            >
+            <a href={buildWhatsAppLink('')} target="_blank" rel="noopener noreferrer" onClick={() => playMechanicalClick('click')} className="hidden min-h-10 items-center justify-center rounded-xl bg-secondary px-4 text-sm font-semibold tracking-wide text-deep-charcoal shadow-md transition-colors hover:bg-amber-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary lg:inline-flex">
               {t.nav.inquire}
-            </motion.a>
-
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.15 }}
-              className="lg:hidden min-h-11 min-w-11 inline-flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-lg"
-              onClick={() => {
-                playMechanicalClick('click');
-                setIsOpen(!isOpen);
-              }}
-              aria-label="Alternar menu"
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">{isOpen ? 'close' : 'menu'}</span>
-            </motion.button>
+            </a>
+            <button ref={mobileButtonRef} type="button" aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={isOpen} aria-controls="mobile-navigation-menu" onClick={() => { playMechanicalClick('click'); setIsOpen((value) => !value); }} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-secondary lg:hidden">
+              {isOpen ? <X size={26} aria-hidden="true" /> : <Menu size={26} aria-hidden="true" />}
+            </button>
           </div>
         </div>
-        
-        {/* Menu Mobile / Tablet */}
+
         <AnimatePresence>
           {isOpen && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="lg:hidden bg-background/95 backdrop-blur-lg border-t border-surface-variant/30 overflow-hidden"
-            >
-              <ul className="flex flex-col py-4 px-margin-mobile">
-                <li className="py-2">
-                  <motion.a 
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => handleNavClick(e, 'collection')} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
-                    href="#collection"
-                  >
-                    {t.nav.collection}
-                  </motion.a>
-                </li>
-                <li className="py-2">
-                  <motion.a 
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => handleNavClick(e, 'about')} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
-                    href="#about"
-                  >
-                    {t.nav.about}
-                  </motion.a>
-                </li>
-                <li className="py-2">
-                  <motion.a 
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => handleNavClick(e, 'purpose')} 
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer" 
-                    href="#purpose"
-                  >
-                    {t.nav.purpose}
-                  </motion.a>
-                </li>
-                <li className="py-2">
-                  <motion.a
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => handleNavClick(e, 'partners')}
-                    className="font-label-caps text-base text-on-surface-variant hover:text-amber-glow transition-colors block py-1.5 tracking-wider cursor-pointer"
-                    href="#partners"
-                  >
-                    {t.nav.partners}
-                  </motion.a>
-                </li>
-                <li className="py-3 mt-4">
-                  <motion.a 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    href={buildWhatsAppLink('Olá, Studio SenhorEle!')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      playMechanicalClick('click');
-                      setIsOpen(false);
-                    }}
-                    className="w-full flex items-center justify-center bg-secondary text-deep-charcoal font-label-caps text-base font-semibold px-6 py-3.5 rounded-xl hover:bg-amber-glow transition-colors cursor-pointer"
-                  >
-                    {t.nav.inquire}
-                  </motion.a>
-                </li>
-              </ul>
+            <motion.div id="mobile-navigation-menu" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="overflow-hidden border-t border-surface-variant/30 bg-background/98 backdrop-blur-lg lg:hidden">
+              <div className="px-margin-mobile py-4">
+                <a href="#collection" onClick={(event) => handleNavClick(event, 'collection')} className={mobileLinkClass}>{t.nav.collection}</a>
+                <a href="#guests" onClick={(event) => handleNavClick(event, 'guests')} className={mobileLinkClass}>{t.nav.guests}</a>
+                <a href="#diario" onClick={(event) => handleNavClick(event, 'diario')} className={mobileLinkClass}>{t.nav.diary}</a>
+                <div className="my-2 border-t border-surface-variant/30 pt-3">
+                  <p className="px-2 pb-1 text-[10px] font-label-caps uppercase tracking-[0.12em] text-secondary">{t.nav.studio}</p>
+                  <a href="#about" onClick={(event) => handleNavClick(event, 'about')} className={mobileLinkClass}>{t.nav.about}</a>
+                  <a href="#purpose" onClick={(event) => handleNavClick(event, 'purpose')} className={mobileLinkClass}>{t.nav.purpose}</a>
+                  <a href="#partners" onClick={(event) => handleNavClick(event, 'partners')} className={mobileLinkClass}>{t.nav.partners}</a>
+                </div>
+                <a href={buildWhatsAppLink('Olá, Studio SenhorEle!')} target="_blank" rel="noopener noreferrer" onClick={() => { playMechanicalClick('click'); setIsOpen(false); }} className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-deep-charcoal transition-colors hover:bg-amber-glow focus-visible:outline-2 focus-visible:outline-secondary">
+                  {t.nav.inquire}
+                </a>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

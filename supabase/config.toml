@@ -1,0 +1,4 @@
+project_id = "rucqvvollyrlgyekoelq"
+
+[functions.sync-social]
+verify_jwt = false

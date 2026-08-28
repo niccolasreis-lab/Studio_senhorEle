@@ -1,6 +1,6 @@
 /**
  * Endpoint serverless (Vercel) que renderiza o Open Graph de cada item
- * compartilhável do site — posts do feed e veículos (base + custom do Supabase).
+ * compartilhável do site — veículos do acervo, convidados e Diário do Studio.
  *
  * Rota: /api/og?id=<shareId>  (alcançável também via /p/<shareId> graças ao
  * rewrite em vercel.json).
@@ -10,7 +10,7 @@
  *
  * IMPORTANTE: este arquivo NÃO importa nada de ../src — o Vercel empacota a pasta
  * api/ com nft e imports relativos para src/ quebram no runtime. Os dados
- * estáticos abaixo espelham src/data (posts do feed + veículos base) e a leitura
+ * estáticos abaixo espelham os veículos-base e a leitura
  * do Supabase usa apenas o client npm (node_modules).
  */
 import { createClient } from '@supabase/supabase-js';
@@ -18,7 +18,7 @@ import { createClient } from '@supabase/supabase-js';
 type Handler = (req: any, res: any) => Promise<void> | void;
 
 interface ShareItemResult {
-  kind: 'instagram' | 'vehicle';
+  kind: 'vehicle' | 'guest' | 'diary';
   id: string;
   shareId: string;
   title: string;
@@ -40,73 +40,10 @@ const normalizeShareKey = (raw: string): string =>
   raw.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // ---------------------------------------------------------------------------
-// Dados estáticos espelhados de src/data/instagramPosts.ts e
-// src/services/customVehicleService.ts (INITIAL_DEFAULT_VEHICLES).
+// Dados estáticos espelhados somente dos veículos-base.
 // Mantidos aqui para que a função funcione sem depender de imports de src/.
 // ---------------------------------------------------------------------------
 const STATIC_SHARE_ITEMS: Omit<ShareItemResult, 'siteUrl' | 'redirectUrl'>[] = [
-  // --- Posts do feed (Instagram) ---
-  {
-    kind: 'instagram',
-    id: 'post-por-911-1973',
-    shareId: 'INSTA-911-73',
-    title: 'Porsche 911 Targa (1973) — Encontro de Clássicos',
-    description:
-      'Detalhes únicos de restauração e preservação do Porsche 911 Targa. Uma verdadeira joia em tom Verde Irish Green de 1973. Acompanhe os detalhes da curadoria @studiosenhorele.',
-    image: '/assets/images/porsche-911-classic-1973.jpg',
-    permalink: 'https://www.instagram.com/p/C1234567890/',
-  },
-  {
-    kind: 'instagram',
-    id: 'post-vw-kombi-corujinha',
-    shareId: 'INSTA-KMB-70',
-    title: 'VW Kombi Corujinha 1970 — Saia e Blusa Lotus',
-    description:
-      'Ícone da cultura Air-Cooled nacional. Kombi Corujinha de 6 portas restaurada nos mínimos detalhes. Disponível para consulta de curadoria no acervo Studio SenhorEle.',
-    image: '/assets/images/vw-kombi-corujinha-1970.jpg',
-    permalink: 'https://www.instagram.com/p/C0987654321/',
-  },
-  {
-    kind: 'instagram',
-    id: 'post-fusca-cal-style',
-    shareId: 'INSTA-FSC-68',
-    title: 'VW Fusca Cal Style 1968 — California Heritage',
-    description:
-      'A essência do Cal-Look com suspensão encurtada, motor 1600cc de dupla carburação e acabamento impecável. Foto oficial no Box 767. Entre em contato para saber mais.',
-    image: '/assets/images/vw-fusca-cal-style-1968.jpg',
-    permalink: 'https://www.instagram.com/p/C9988776655/',
-  },
-  {
-    kind: 'instagram',
-    id: 'post-aero-willys-1967',
-    shareId: 'INSTA-AWL-67',
-    title: 'Aero Willys 1967 — Origem do Acervo',
-    description:
-      'O modelo que deu início à trajetória do Studio SenhorEle. Aero Willys 1967 em estado de conservação primoroso e interior 100% original. Confira os detalhes no feed!',
-    image: '/assets/images/aero-willys-1967.jpg',
-    permalink: 'https://www.instagram.com/p/C5544332211/',
-  },
-  {
-    kind: 'instagram',
-    id: 'post-boxer-aircooled',
-    shareId: 'INSTA-BOX-767',
-    title: 'Preparação Box 767 — Motor Boxer Air Cooled',
-    description:
-      'Bastidores da preparação de motores Boxer refrigerados a ar. Arte artesanal, acerto fino e paixão pela mecânica clássica Volkswagen e Porsche.',
-    image: '/assets/images/aircooled-box-767.jpg',
-    permalink: 'https://www.instagram.com/p/C1122334455/',
-  },
-  {
-    kind: 'instagram',
-    id: 'post-curadoria-senhorele',
-    shareId: 'INSTA-SRL-06',
-    title: 'Curadoria SenhorEle — Preservação de Raros',
-    description:
-      'Processo de avaliação de originalidade e proveniência histórica. Preservando a cultura antigomobilista e conectando apaixonados a exemplares únicos.',
-    image: '/assets/images/logo-senhorele-192.jpg',
-    permalink: 'https://www.instagram.com/studiosenhorele/',
-  },
-
   // --- Veículos base do acervo ---
   {
     kind: 'vehicle',
@@ -192,8 +129,9 @@ const buildShareItemResult = (
   origin: string
 ): ShareItemResult => {
   const shareId = encodeURIComponent(item.shareId);
-  const siteUrl =
-    item.kind === 'vehicle' ? `${origin}/?v=${shareId}` : `${origin}/#instagram-feed`;
+  const siteUrl = item.kind === 'diary'
+    ? `${origin}/?d=${shareId}#diario`
+    : `${origin}/?v=${shareId}`;
   return { ...item, siteUrl, redirectUrl: `${origin}/p/${shareId}` };
 };
 
@@ -231,8 +169,8 @@ const absolutize = (url: string, origin: string): string => {
 };
 
 async function findCustomVehicle(id: string, origin: string): Promise<ShareItemResult | null> {
-  const key = normalizeShareKey(id);
-  if (!key) return null;
+  const shareIdCandidate = id.trim().toUpperCase();
+  if (!normalizeShareKey(shareIdCandidate)) return null;
 
   try {
     const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -241,23 +179,28 @@ async function findCustomVehicle(id: string, origin: string): Promise<ShareItemR
 
     const { data, error } = await client
       .from('custom_vehicles')
-      .select('share_id, id, title, subtitle, image, year, engine, transmission, description, status')
+      .select('share_id, id, title, subtitle, image, year, engine, transmission, description, status, collection_kind')
       .in('status', ['published', 'reserved'])
-      .limit(200);
-
-    if (error || !data || data.length === 0) return null;
-
-    const row: any = data.find(
-      (vehicle: any) =>
-        normalizeShareKey(String(vehicle.share_id || '')) === key ||
-        normalizeShareKey(String(vehicle.id || '')) === key,
-    );
+      .eq('share_id', shareIdCandidate)
+      .maybeSingle();
+    if (error) return null;
+    let row: any = data;
+    if (!row) {
+      const fallback = await client
+        .from('custom_vehicles')
+        .select('share_id, id, title, subtitle, image, year, engine, transmission, description, status, collection_kind')
+        .in('status', ['published', 'reserved'])
+        .eq('id', id.trim())
+        .maybeSingle();
+      if (fallback.error) return null;
+      row = fallback.data;
+    }
     if (!row) return null;
 
     const shareId = row.share_id || id;
     const encodedShareId = encodeURIComponent(shareId);
     return {
-      kind: 'vehicle' as const,
+      kind: row.collection_kind === 'guest' ? 'guest' as const : 'vehicle' as const,
       id: row.id || shareId,
       shareId,
       title: row.title || 'Veículo — Studio Senhor Ele',
@@ -273,28 +216,74 @@ async function findCustomVehicle(id: string, origin: string): Promise<ShareItemR
   }
 }
 
+async function findStudioUpdate(id: string, origin: string): Promise<ShareItemResult | null> {
+  const shareIdCandidate = id.trim().toUpperCase();
+  if (!normalizeShareKey(shareIdCandidate)) return null;
+  try {
+    const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await client
+      .from('studio_updates')
+      .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status')
+      .eq('editorial_status', 'published')
+      .eq('share_id', shareIdCandidate)
+      .maybeSingle();
+    if (error) return null;
+    let row: any = data;
+    if (!row && /^\d+$/.test(id.trim())) {
+      const fallback = await client
+        .from('studio_updates')
+        .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status')
+        .eq('editorial_status', 'published')
+        .eq('id', Number(id.trim()))
+        .maybeSingle();
+      if (fallback.error) return null;
+      row = fallback.data;
+    }
+    if (!row) return null;
+    const shareId = row.share_id || id;
+    return {
+      kind: 'diary',
+      id: String(row.id),
+      shareId,
+      title: row.title || 'Diário do Studio',
+      description: row.summary || 'Novidade publicada no Diário do Studio SenhorEle.',
+      image: row.thumbnail_url || DEFAULT_IMAGE,
+      permalink: row.canonical_url || undefined,
+      siteUrl: `${origin}/?d=${encodeURIComponent(shareId)}#diario`,
+      redirectUrl: `${origin}/p/${encodeURIComponent(shareId)}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 const renderPage = (result: ShareItemResult, origin: string): string => {
   const title = escapeHtml(result.title);
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
   const sourceImage = absolutize(result.image || DEFAULT_IMAGE, origin);
-  const image = result.kind === 'vehicle'
+  const image = result.kind === 'vehicle' || result.kind === 'guest' || result.kind === 'diary'
     ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=3`
     : sourceImage;
   const imageAttribute = escapeHtml(image);
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
-  const tag = result.kind === 'vehicle' ? 'Veículo' : 'Post';
-  const isInstagram = result.kind === 'instagram';
+  const tag = result.kind === 'guest'
+    ? 'Convidado do Studio'
+    : result.kind === 'diary'
+      ? 'Diário do Studio'
+      : 'Veículo';
 
   const contentHtml =
-    result.kind === 'vehicle'
+    result.kind === 'vehicle' || result.kind === 'guest'
       ? [
           `<div class="chip">${escapeHtml(result.year ? `• ${result.year}` : '')}</div>`.trim(),
         ].join('')
       : '';
 
   const linksHtml =
-    isInstagram && result.permalink
-      ? `<a class="btn btn-outline" href="${escapeHtml(result.permalink)}" rel="noopener">Ver no Instagram</a>`
+    result.kind === 'diary' && result.permalink
+      ? `<a class="btn btn-outline" href="${escapeHtml(result.permalink)}" rel="noopener">Ver publicação original</a>`
       : '';
 
   const html = `<!DOCTYPE html>
@@ -459,6 +448,16 @@ async function handle(req: any, res: any) {
     return;
   }
 
+  const customItem = await findCustomVehicle(rawId, origin);
+  if (customItem) {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.end(renderPage(customItem, origin));
+    return;
+  }
+
+  // O Supabase é a fonte de verdade também para veículos-base editados pelo
+  // painel. O espelho estático só é usado quando ainda não existe linha remota.
   const staticItem = findStaticShareItem(key);
   if (staticItem) {
     const result = buildShareItemResult(staticItem, origin);
@@ -468,11 +467,11 @@ async function handle(req: any, res: any) {
     return;
   }
 
-  const customItem = await findCustomVehicle(rawId, origin);
-  if (customItem) {
+  const diaryItem = await findStudioUpdate(rawId, origin);
+  if (diaryItem) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end(renderPage(customItem, origin));
+    res.end(renderPage(diaryItem, origin));
     return;
   }
 

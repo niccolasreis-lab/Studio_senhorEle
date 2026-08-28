@@ -5,42 +5,26 @@ type Handler = (req: any, res: any) => Promise<void> | void;
 
 const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BAB7c_Baja_BHKFJvws7hg_HzHRIVAr';
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 10000;
 
-const normalizeShareKey = (raw: string): string =>
-  raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalizeShareKey = (raw: string): string => raw.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// ---------------------------------------------------------------------------
-// Imagens dos itens estáticos (espelho de api/og.ts — STATIC_SHARE_ITEMS).
-// Inline: cada função de api/ é empacotada individualmente pelo Vercel (nft),
-// e imports relativos a outros módulos quebram no runtime.
-// ---------------------------------------------------------------------------
-const STATIC_IMAGE_BY_KEY: Record<string, string> = {
-  insta91173: '/assets/images/porsche-911-classic-1973.jpg',
-  postpor9111973: '/assets/images/porsche-911-classic-1973.jpg',
-  instakmb70: '/assets/images/vw-kombi-corujinha-1970.jpg',
-  postvwkombicorujinha: '/assets/images/vw-kombi-corujinha-1970.jpg',
-  instafsc68: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  postfuscacalstyle: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  instaawl67: '/assets/images/aero-willys-1967.jpg',
-  postaerowillys: '/assets/images/aero-willys-1967.jpg',
-  instabox767: '/assets/images/aircooled-box-767.jpg',
-  postboxeraircooled: '/assets/images/aircooled-box-767.jpg',
-  instasrl06: '/assets/images/logo-senhorele-192.jpg',
-  postcuradoriasenhorele: '/assets/images/logo-senhorele-192.jpg',
-  srl9111973: '/assets/images/porsche-911-classic-1973.jpg',
-  porsche911: '/assets/images/porsche-911-classic-1973.jpg',
-  srlkmb1970: '/assets/images/vw-kombi-corujinha-1970.jpg',
-  vwkombi: '/assets/images/vw-kombi-corujinha-1970.jpg',
-  srljfsc1968: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  vwfusacal: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  srlawl1967: '/assets/images/aero-willys-1967.jpg',
-  aerowillys: '/assets/images/aero-willys-1967.jpg',
-  srlbox1976: '/assets/images/aircooled-box-767.jpg',
-  aircooledbox767: '/assets/images/aircooled-box-767.jpg',
-  srljfsc1994: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  vwfusca1994: '/assets/images/vw-fusca-cal-style-1968.jpg',
-  srl9111989: '/assets/images/porsche-911-classic-1973.jpg',
-  porsche911carrera1989: '/assets/images/porsche-911-classic-1973.jpg',
+const STATIC_ITEM_BY_KEY: Record<string, { image: string; title: string; tag: string }> = {
+  srl9111973: { image: '/assets/images/porsche-911-classic-1973.jpg', title: 'Porsche 911 Classic', tag: 'Coleção' },
+  porsche911: { image: '/assets/images/porsche-911-classic-1973.jpg', title: 'Porsche 911 Classic', tag: 'Coleção' },
+  srlkmb1970: { image: '/assets/images/vw-kombi-corujinha-1970.jpg', title: 'VW Kombi Corujinha', tag: 'Coleção' },
+  vwkombi: { image: '/assets/images/vw-kombi-corujinha-1970.jpg', title: 'VW Kombi Corujinha', tag: 'Coleção' },
+  srlfsc1968: { image: '/assets/images/vw-fusca-cal-style-1968.jpg', title: 'VW Fusca Cal Style', tag: 'Coleção' },
+  vwfusacal: { image: '/assets/images/vw-fusca-cal-style-1968.jpg', title: 'VW Fusca Cal Style', tag: 'Coleção' },
+  srlawl1967: { image: '/assets/images/aero-willys-1967.jpg', title: 'Aero Willys', tag: 'Coleção' },
+  aerowillys: { image: '/assets/images/aero-willys-1967.jpg', title: 'Aero Willys', tag: 'Coleção' },
+  srlbox1976: { image: '/assets/images/aircooled-box-767.jpg', title: 'Air Cooled Box 767', tag: 'Coleção' },
+  aircooledbox767: { image: '/assets/images/aircooled-box-767.jpg', title: 'Air Cooled Box 767', tag: 'Coleção' },
+  srlfsc1994: { image: '/assets/images/vw-fusca-cal-style-1968.jpg', title: 'VW Fusca Itamar', tag: 'Coleção' },
+  vwfusca1994: { image: '/assets/images/vw-fusca-cal-style-1968.jpg', title: 'VW Fusca Itamar', tag: 'Coleção' },
+  srl9111989: { image: '/assets/images/porsche-911-classic-1973.jpg', title: 'Porsche 911 Carrera 3.2', tag: 'Coleção' },
+  porsche911carrera1989: { image: '/assets/images/porsche-911-classic-1973.jpg', title: 'Porsche 911 Carrera 3.2', tag: 'Coleção' },
 };
 
 const buildOrigin = (req: any): string => {
@@ -56,55 +40,112 @@ const absolutize = (url: string, origin: string): string => {
   return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-const FETCH_TIMEOUT_MS = 10000;
+const trustedImageUrl = (rawUrl: string, origin: string): URL | null => {
+  try {
+    const parsed = new URL(rawUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    const host = parsed.hostname.toLowerCase();
+    const sameOrigin = parsed.origin === new URL(origin).origin;
+    const trustedExternal = host === 'rucqvvollyrlgyekoelq.supabase.co'
+      || host === 'i.ytimg.com'
+      || host === 'yt3.ggpht.com'
+      || host.endsWith('.cdninstagram.com')
+      || host.endsWith('.fbcdn.net');
+    return sameOrigin || trustedExternal ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 
-const renderFromSource = async (res: any, sourceUrl: string): Promise<void> => {
+const fetchImage = async (sourceUrl: string, origin: string): Promise<Buffer | null> => {
+  const trusted = trustedImageUrl(sourceUrl, origin);
+  if (!trusted) return null;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  let upstream: Response;
   try {
-    upstream = await fetch(sourceUrl, {
+    const upstream = await fetch(trusted, {
       headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*' },
       signal: controller.signal,
+      redirect: 'error',
     });
-  } catch (err: any) {
-    clearTimeout(timeout);
-    if (err?.name === 'AbortError') throw new Error('Source fetch timed out');
-    throw err;
-  }
-  clearTimeout(timeout);
-
-  if (!upstream.ok) throw new Error(`Source returned ${upstream.status}`);
-  if (!upstream.body) throw new Error('Source returned no body');
-
-  const reader = upstream.body.getReader();
-  const chunks: Buffer[] = [];
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.byteLength;
-    if (received > MAX_IMAGE_BYTES) {
-      await reader.cancel();
-      throw new Error(`Source exceeds ${MAX_IMAGE_BYTES} bytes limit`);
+    if (!upstream.ok || !upstream.body) return null;
+    const contentType = upstream.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().startsWith('image/')) return null;
+    const reader = upstream.body.getReader();
+    const chunks: Buffer[] = [];
+    let received = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > MAX_IMAGE_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(Buffer.from(value));
     }
-    chunks.push(Buffer.from(value));
+    return Buffer.concat(chunks);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
+};
 
-  const source = Buffer.concat(chunks);
-  const body = await sharp(source)
-    .rotate()
-    .resize(1200, 630, { fit: 'cover', position: 'centre' })
-    .jpeg({ quality: 82, progressive: true, chromaSubsampling: '4:2:0' })
+const escapeXml = (value: string) => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&apos;');
+
+const titleLines = (title: string): string[] => {
+  const words = title.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  const lines: string[] = [];
+  for (const word of words) {
+    const current = lines[lines.length - 1];
+    if (!current || (current.length + word.length + 1 > 32 && lines.length < 2)) lines.push(word);
+    else lines[lines.length - 1] = `${current} ${word}`;
+  }
+  if (lines.length > 2) lines.splice(2);
+  if (lines[1]?.length > 38) lines[1] = `${lines[1].slice(0, 37).trimEnd()}…`;
+  return lines.length ? lines : ['Studio SenhorEle'];
+};
+
+const overlaySvg = (title: string, tag: string) => {
+  const lines = titleLines(title);
+  return Buffer.from(`
+    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="34%" stop-color="#07100b" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#07100b" stop-opacity="0.96"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="630" fill="url(#shade)"/>
+      <rect x="64" y="438" width="${Math.max(150, tag.length * 15 + 44)}" height="42" rx="12" fill="#b08332"/>
+      <text x="86" y="466" fill="#101611" font-size="20" font-weight="700" font-family="Arial, sans-serif" letter-spacing="2">${escapeXml(tag.toUpperCase())}</text>
+      ${lines.map((line, index) => `<text x="64" y="${535 + index * 58}" fill="#f2ead8" font-size="${lines.length === 1 ? 54 : 48}" font-weight="700" font-family="Georgia, serif">${escapeXml(line)}</text>`).join('')}
+      <text x="1136" y="582" text-anchor="end" fill="#d7c59b" font-size="20" font-family="Arial, sans-serif">Studio SenhorEle</text>
+    </svg>
+  `);
+};
+
+const renderCard = async (res: any, sourceUrl: string | null, title: string, tag: string, origin: string): Promise<void> => {
+  const source = sourceUrl ? await fetchImage(sourceUrl, origin) : null;
+  const base = source
+    ? sharp(source).rotate().resize(1200, 630, { fit: 'cover', position: 'centre' })
+    : sharp({ create: { width: 1200, height: 630, channels: 3, background: '#142019' } });
+  const body = await base
+    .composite([{ input: overlaySvg(title, tag), top: 0, left: 0 }])
+    .jpeg({ quality: 84, progressive: true, chromaSubsampling: '4:2:0' })
     .toBuffer();
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'image/jpeg');
   res.setHeader('Content-Length', String(body.length));
   res.setHeader('Content-Disposition', 'inline');
-  res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
   res.setHeader('X-Robots-Tag', 'all');
   res.end(body);
 };
@@ -120,36 +161,38 @@ const handler: Handler = async (req, res) => {
     }
 
     const origin = buildOrigin(req);
-
-    const staticImage = STATIC_IMAGE_BY_KEY[key];
-    if (staticImage) {
-      await renderFromSource(res, absolutize(staticImage, origin));
+    const shareIdCandidate = rawId.toUpperCase();
+    const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: vehicle, error } = await client
+      .from('custom_vehicles')
+      .select('id, share_id, image, title, collection_kind, status')
+      .in('status', ['published', 'reserved'])
+      .eq('share_id', shareIdCandidate)
+      .maybeSingle();
+    if (!error && vehicle) {
+      await renderCard(res, vehicle.image ? absolutize(vehicle.image, origin) : null, vehicle.title || 'Veículo', vehicle.collection_kind === 'guest' ? 'Convidado do Studio' : 'Coleção', origin);
       return;
     }
 
-    const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data, error } = await client
-      .from('custom_vehicles')
-      .select('id, share_id, image, status')
-      .in('status', ['published', 'reserved'])
-      .limit(200);
+    const staticItem = STATIC_ITEM_BY_KEY[key];
+    if (staticItem) {
+      await renderCard(res, absolutize(staticItem.image, origin), staticItem.title, staticItem.tag, origin);
+      return;
+    }
 
-    if (error) throw error;
-
-    const vehicle = data?.find(
-      (item: any) =>
-        normalizeShareKey(String(item.share_id || '')) === key ||
-        normalizeShareKey(String(item.id || '')) === key,
-    );
-    if (!vehicle?.image || !/^https:\/\//i.test(vehicle.image)) {
+    const { data: update, error: updateError } = await client
+      .from('studio_updates')
+      .select('id, share_id, thumbnail_url, title, editorial_status')
+      .eq('editorial_status', 'published')
+      .eq('share_id', shareIdCandidate)
+      .maybeSingle();
+    if (updateError) throw updateError;
+    if (!update) {
       res.statusCode = 404;
       res.end('Image not found');
       return;
     }
-
-    await renderFromSource(res, vehicle.image);
+    await renderCard(res, update.thumbnail_url ? absolutize(update.thumbnail_url, origin) : null, update.title || 'Diário do Studio', 'Diário do Studio', origin);
   } catch (error) {
     console.error('[og-image] failed', error);
     res.statusCode = 502;

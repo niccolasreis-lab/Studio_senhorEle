@@ -1,13 +1,11 @@
 /**
- * Registro compartilhado de itens compartilháveis (posts do feed + veículos
- * do acervo) usado pelo endpoint /api/og para montar o Open Graph de cada
- * item. Fonte única de dados para os meta tags servidos aos crawlers.
+ * Registro local dos veículos-base. Conteúdo do Diário e veículos cadastrados
+ * são resolvidos diretamente no Supabase pelo endpoint Open Graph.
  */
-import { FALLBACK_INSTAGRAM_POSTS } from './instagramPosts';
 import { INITIAL_DEFAULT_VEHICLES } from '../services/customVehicleService';
 
 export interface ShareItem {
-  kind: 'instagram' | 'vehicle';
+  kind: 'vehicle';
   id: string;
   shareId: string;
   title: string;
@@ -23,16 +21,6 @@ export function normalizeShareKey(raw: string): string {
 }
 
 export function buildStaticShareItems(): ShareItem[] {
-  const posts: ShareItem[] = FALLBACK_INSTAGRAM_POSTS.map((p) => ({
-    kind: 'instagram',
-    id: p.id,
-    shareId: p.shareId,
-    title: p.title,
-    description: p.caption,
-    image: p.mediaUrl,
-    permalink: p.permalink,
-  }));
-
   const vehicles: ShareItem[] = INITIAL_DEFAULT_VEHICLES.map((v) => ({
     kind: 'vehicle',
     id: v.id,
@@ -44,7 +32,7 @@ export function buildStaticShareItems(): ShareItem[] {
     year: v.year,
   }));
 
-  return [...posts, ...vehicles];
+  return vehicles;
 }
 
 export function findStaticShareItem(rawId: string): ShareItem | null {
@@ -68,9 +56,7 @@ export function buildShareItemResult(
   origin: string
 ): ShareItemResult {
   const shareId = encodeURIComponent(item.shareId);
-  const siteUrl = item.kind === 'vehicle'
-    ? `${origin}/?v=${shareId}`
-    : `${origin}/#instagram-feed`;
+  const siteUrl = `${origin}/?v=${shareId}`;
 
   return {
     ...item,

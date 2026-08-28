@@ -4,6 +4,7 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
 import Collection from './components/Collection';
+import StudioDiary from './components/StudioDiary';
 import Partners from './components/Partners';
 import Footer from './components/Footer';
 import CustomCursor from './components/CustomCursor';
@@ -49,14 +50,29 @@ export default function App() {
     const vehicleParam = params.get('v') || params.get('vehicle') || params.get('shareId');
     if (vehicleParam) {
       const cleanParam = vehicleParam.toLowerCase().trim();
-      import('./components/VehicleDetailModal').then(({ VEHICLE_DETAILS }) => {
+      Promise.all([
+        import('./components/VehicleDetailModal'),
+        import('./services/customVehicleService'),
+      ]).then(async ([{ VEHICLE_DETAILS }, { CustomVehicleService }]) => {
         const match = Object.entries(VEHICLE_DETAILS).find(
           ([id, details]) =>
             id.toLowerCase() === cleanParam ||
             details.shareId.toLowerCase() === cleanParam ||
             details.shareId.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.replace(/[^a-z0-9]/g, '')
         );
-        if (match) setSelectedVehicleDetail(match[0]);
+        if (match) {
+          setSelectedVehicleDetail(match[0]);
+          return;
+        }
+
+        await CustomVehicleService.syncWithSupabase();
+        const dynamicMatch = CustomVehicleService.getCustomVehicles().find(
+          (vehicle) =>
+            vehicle.id.toLowerCase() === cleanParam ||
+            vehicle.shareId.toLowerCase() === cleanParam ||
+            vehicle.shareId.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.replace(/[^a-z0-9]/g, '')
+        );
+        if (dynamicMatch) setSelectedVehicleDetail(dynamicMatch.id);
       });
     }
   }, []);
@@ -93,6 +109,7 @@ export default function App() {
             <Collection
               onOpenDetail={handleOpenVehicleDetail}
             />
+            <StudioDiary />
             <Partners />
           </main>
           <Footer 

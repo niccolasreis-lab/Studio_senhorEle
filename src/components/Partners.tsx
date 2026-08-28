@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersShowcase, { Partner } from './ui/partners-showcase';
+import { StudioUpdateService } from '../services/studioUpdateService';
 
 export default function Partners() {
   const { t } = useLanguage();
+  const [fuscaNaFotoProfile, setFuscaNaFotoProfile] = useState<{ avatar?: string; description?: string }>({});
+
+  useEffect(() => {
+    let active = true;
+    StudioUpdateService.fetchSources().then((sources) => {
+      const source = sources.find((item) => item.sourceKey === 'youtube-fuscanafoto');
+      if (active) setFuscaNaFotoProfile({ avatar: source?.avatarUrl, description: source?.description || undefined });
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const partners: Partner[] = [
     {
@@ -56,6 +67,18 @@ export default function Partners() {
       logo: '/images/parceiros/lobato-gui.jpg',
       imageAlt: t.partners.lobatoImageAlt,
       logoClassName: 'px-3 py-1 sm:px-4 sm:py-2',
+    },
+    {
+      id: 6,
+      name: 'Fusca na Foto',
+      category: t.partners.categories.youtubePartner,
+      website: 'https://www.youtube.com/@FuscanaFoto',
+      linkLabel: t.partners.youtubeDestination,
+      logo: fuscaNaFotoProfile.avatar || '',
+      logoStatus: fuscaNaFotoProfile.avatar ? 'available' : 'pending',
+      description: fuscaNaFotoProfile.description,
+      imageAlt: t.partners.fuscaNaFotoImageAlt,
+      logoClassName: 'rounded-full px-5 py-2 sm:px-7',
     },
   ];
 

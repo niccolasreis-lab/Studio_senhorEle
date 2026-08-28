@@ -1,5 +1,5 @@
 import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
-import { CustomVehicle } from './customVehicleService';
+import type { CustomVehicle, VehicleStatus } from './customVehicleService';
 
 export const SUPABASE_URL = 'https://rucqvvollyrlgyekoelq.supabase.co';
 export const SUPABASE_PROJECT_REF = 'rucqvvollyrlgyekoelq';
@@ -116,7 +116,10 @@ export const SupabaseService = {
         power: item.power,
         condition: item.condition,
         description: item.description,
-        status: item.status || 'published',
+        status: (item.collection_kind === 'guest' && (item.status === 'reserved' || item.status === 'sold')
+          ? 'draft'
+          : item.status || 'published') as VehicleStatus,
+        collectionKind: item.collection_kind === 'guest' ? 'guest' : 'studio',
         isCustom: true,
       }));
     } catch (err) {
@@ -130,10 +133,19 @@ export const SupabaseService = {
       const client = getSupabaseClient();
       if (!client) return false;
 
+      const collectionKind = vehicle.collectionKind === 'guest' ? 'guest' : 'studio';
+      const status = collectionKind === 'guest' && (vehicle.status === 'reserved' || vehicle.status === 'sold')
+        ? 'draft'
+        : vehicle.status || 'draft';
+      const cleanShareId = vehicle.shareId.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 96);
+      const shareId = collectionKind === 'guest' && !cleanShareId.startsWith('CONV-')
+        ? `CONV-${cleanShareId.replace(/^(SRL-|CONV-)/, '')}`
+        : cleanShareId;
+
       const { error } = await client.from('custom_vehicles').upsert([
         {
           id: vehicle.id,
-          share_id: vehicle.shareId,
+          share_id: shareId,
           title: vehicle.title,
           subtitle: vehicle.subtitle,
           image: vehicle.image,
@@ -147,7 +159,8 @@ export const SupabaseService = {
           power: vehicle.power || '',
           condition: vehicle.condition || '',
           description: vehicle.description || '',
-          status: vehicle.status || 'draft',
+          status,
+          collection_kind: collectionKind,
         },
       ], { onConflict: 'id' });
 
