@@ -69,6 +69,7 @@ const captionTitle = (caption: string | null) => {
 // inference from duration, thumbnails, or the Shorts URL surface.
 const youtubeAspectOverrides = new Map<string, ImportedUpdate['display_aspect']>([
   ['zpCgm9P83Iw', 'portrait'],
+  ['zM4Xta25FZk', 'portrait'],
 ]);
 
 async function secretsMatch(expected: string, supplied: string) {
