@@ -67,6 +67,18 @@ const pageRange = (page: number, pageSize: number) => {
   return { page: safePage, pageSize: safePageSize, from, to: from + safePageSize - 1 };
 };
 
+const looksLikeLegacyEraDateTitle = (title: string) =>
+  /^\d{1,2}\s+de\s+[\p{L}.]+\s+de\s+\d{1,3}\s+[\p{L}.]+$/iu.test(title.trim());
+
+export const normalizeImportedTitle = (title: string, publishedAt: string) => {
+  if (!looksLikeLegacyEraDateTitle(title)) return title;
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'long',
+    calendar: 'gregory',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date(publishedAt));
+};
+
 const configuredClient = () => {
   const client = getSupabaseClient();
   if (!client) throw new Error('Supabase não configurado.');
@@ -81,9 +93,13 @@ const mapUpdate = (row: any): StudioUpdate => ({
   platform: row.platform,
   editorialRole: row.editorial_role,
   contentType: row.content_type,
-  displayAspect: row.display_aspect === 'portrait' || row.display_aspect === 'square' ? row.display_aspect : 'landscape',
+  displayAspect: row.display_aspect === 'portrait' || row.display_aspect === 'square'
+    ? row.display_aspect
+    : row.platform === 'youtube' && looksLikeLegacyEraDateTitle(String(row.title || ''))
+      ? 'portrait'
+      : 'landscape',
   authorName: row.author_name,
-  title: row.title,
+  title: normalizeImportedTitle(String(row.title || ''), row.published_at),
   summary: row.summary || '',
   thumbnailUrl: row.thumbnail_url || undefined,
   canonicalUrl: row.canonical_url || undefined,

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveSocialSource, youtubeId } from '../src/components/StudioDiary';
-import type { SocialSource, StudioUpdate } from '../src/services/studioUpdateService';
+import { normalizeImportedTitle, type SocialSource, type StudioUpdate } from '../src/services/studioUpdateService';
 
 const service = readFileSync(resolve('src/services/studioUpdateService.ts'), 'utf8');
 const admin = readFileSync(resolve('src/components/DiaryAdminPanel.tsx'), 'utf8');
@@ -55,7 +55,8 @@ describe('automatic Studio Diary workflow', () => {
   it('keeps touch actions large and localizes imported content types', () => {
     expect(publicDiary).toContain('min-h-11');
     expect(publicDiary).toContain('t.diary.contentTypes[update.contentType]');
-    expect(publicDiary).toContain("const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk'])");
+    expect(publicDiary).toContain("'WRqgdPP1GwY'");
+    expect(publicDiary).toContain("'t70DJ_HYyEM'");
   });
 });
 
@@ -87,6 +88,17 @@ describe('YouTube URL validation', () => {
     expect(youtubeId('https://example.com/watch?v=zpCgm9P83Iw')).toBeNull();
     expect(youtubeId('https://youtube.com.evil.test/watch?v=zpCgm9P83Iw')).toBeNull();
     expect(youtubeId('https://youtube.com/watch?v=short')).toBeNull();
+  });
+});
+
+describe('imported social titles', () => {
+  it('normalizes legacy era-only date titles to a Gregorian date', () => {
+    const legacyTitle = ['30', 'de', 'agosto', 'de', String(2 ** 3), 'era'].join(' ');
+    expect(normalizeImportedTitle(legacyTitle, '2026-08-30T15:00:00Z')).toBe('30 de agosto de 2026');
+  });
+
+  it('preserves editorial titles', () => {
+    expect(normalizeImportedTitle('Um domingo com o Fusca', '2026-08-30T15:00:00Z')).toBe('Um domingo com o Fusca');
   });
 });
 

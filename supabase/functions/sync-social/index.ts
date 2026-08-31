@@ -64,12 +64,27 @@ const captionTitle = (caption: string | null) => {
   return (firstLine || 'Publicação do Studio SenhorEle').slice(0, 180);
 };
 
+const normalizeYouTubeTitle = (title: string, publishedAt: string) => {
+  const legacyDateTitle = /^\d{1,2}\s+de\s+[\p{L}.]+\s+de\s+\d{1,3}\s+[\p{L}.]+$/iu.test(title.trim());
+  if (!legacyDateTitle) return { title: title.slice(0, 180), portrait: false };
+  return {
+    title: new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'long',
+      calendar: 'gregory',
+      timeZone: 'America/Sao_Paulo',
+    }).format(new Date(publishedAt)),
+    portrait: true,
+  };
+};
+
 // The public YouTube API does not expose the source video's pixel aspect ratio.
 // These overrides are therefore evidence-backed editorial metadata, not an
 // inference from duration, thumbnails, or the Shorts URL surface.
 const youtubeAspectOverrides = new Map<string, ImportedUpdate['display_aspect']>([
   ['zpCgm9P83Iw', 'portrait'],
   ['zM4Xta25FZk', 'portrait'],
+  ['WRqgdPP1GwY', 'portrait'],
+  ['t70DJ_HYyEM', 'portrait'],
 ]);
 
 async function secretsMatch(expected: string, supplied: string) {
@@ -192,6 +207,7 @@ async function syncYouTube(source: Source, apiKey: string): Promise<{ updates: I
 
     const snippet = video?.snippet || item.snippet;
     const thumbnails = snippet?.thumbnails || {};
+    const normalizedTitle = normalizeYouTubeTitle(String(snippet?.title || ''), publishedAt);
     updates.push({
       source_id: source.id,
       share_id: shareIdFor('youtube', externalId),
@@ -199,9 +215,9 @@ async function syncYouTube(source: Source, apiKey: string): Promise<{ updates: I
       platform: 'youtube',
       editorial_role: source.editorial_role,
       content_type: 'video',
-      display_aspect: youtubeAspectOverrides.get(externalId) || 'landscape',
+      display_aspect: youtubeAspectOverrides.get(externalId) || (normalizedTitle.portrait ? 'portrait' : 'landscape'),
       author_name: snippet?.channelTitle || source.display_name,
-      title: String(snippet?.title || '').slice(0, 180),
+      title: normalizedTitle.title,
       summary: String(snippet?.description || '').slice(0, 5000),
       thumbnail_url: thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || null,
       canonical_url: `https://www.youtube.com/watch?v=${externalId}`,

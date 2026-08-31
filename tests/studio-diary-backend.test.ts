@@ -84,7 +84,9 @@ describe('social synchronization contract', () => {
   it('marks the user-confirmed 9:16 YouTube video as portrait without thumbnail inference', () => {
     expect(edgeFunction).toContain("['zpCgm9P83Iw', 'portrait']");
     expect(edgeFunction).toContain("['zM4Xta25FZk', 'portrait']");
-    expect(edgeFunction).toContain("display_aspect: youtubeAspectOverrides.get(externalId) || 'landscape'");
+    expect(edgeFunction).toContain("['WRqgdPP1GwY', 'portrait']");
+    expect(edgeFunction).toContain("['t70DJ_HYyEM', 'portrait']");
+    expect(edgeFunction).toContain("display_aspect: youtubeAspectOverrides.get(externalId) || (normalizedTitle.portrait ? 'portrait' : 'landscape')");
     expect(portraitCorrectionMigration).toContain("external_id = 'zM4Xta25FZk'");
     expect(portraitCorrectionMigration).toContain("display_aspect = 'portrait'");
   });

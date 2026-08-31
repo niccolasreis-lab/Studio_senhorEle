@@ -8,7 +8,7 @@ import PostMediaLayout from './PostMediaLayout';
 
 const PAGE_SIZE = 6;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
-const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk']);
+const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk', 'WRqgdPP1GwY', 't70DJ_HYyEM']);
 
 export function youtubeId(url?: string): string | null {
   if (!url) return null;
@@ -170,7 +170,7 @@ function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, 
             decoding="async"
             onLoad={detectImageAspect}
             className={`h-full w-full transition-transform duration-500 group-hover:scale-[1.02] ${
-              aspect === 'portrait' ? 'object-contain' : 'object-cover'
+              aspect === 'portrait' && update.platform !== 'youtube' ? 'object-contain' : 'object-cover'
             }`}
           />
         ) : (
