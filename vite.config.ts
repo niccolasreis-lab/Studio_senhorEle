@@ -11,6 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: null,
         includeAssets: [
           'assets/images/af-logo-192.png',
           'assets/images/af-logo-512.png',
@@ -42,6 +43,7 @@ export default defineConfig(() => {
         },
         workbox: {
           navigateFallback: '/index.html',
+          cleanupOutdatedCaches: true,
         },
       }),
     ],
@@ -49,6 +51,9 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+    },
+    build: {
+      emptyOutDir: true,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
