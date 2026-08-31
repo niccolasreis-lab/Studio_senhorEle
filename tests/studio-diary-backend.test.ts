@@ -15,6 +15,10 @@ const edgeFunction = readFileSync(
   resolve(process.cwd(), 'supabase/functions/sync-social/index.ts'),
   'utf8',
 );
+const portraitCorrectionMigration = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260831130000_correct_diary_youtube_portrait.sql'),
+  'utf8',
+);
 const cronSetup = readFileSync(
   resolve(process.cwd(), 'supabase/social-sync-setup.example.sql'),
   'utf8',
@@ -79,7 +83,10 @@ describe('studio diary database contract', () => {
 describe('social synchronization contract', () => {
   it('marks the user-confirmed 9:16 YouTube video as portrait without thumbnail inference', () => {
     expect(edgeFunction).toContain("['zpCgm9P83Iw', 'portrait']");
+    expect(edgeFunction).toContain("['zM4Xta25FZk', 'portrait']");
     expect(edgeFunction).toContain("display_aspect: youtubeAspectOverrides.get(externalId) || 'landscape'");
+    expect(portraitCorrectionMigration).toContain("external_id = 'zM4Xta25FZk'");
+    expect(portraitCorrectionMigration).toContain("display_aspect = 'portrait'");
   });
 
   it('uses conflict-safe idempotent writes and independent per-source failures', () => {

@@ -8,6 +8,7 @@ import PostMediaLayout from './PostMediaLayout';
 
 const PAGE_SIZE = 6;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
+const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk']);
 
 export function youtubeId(url?: string): string | null {
   if (!url) return null;
@@ -35,6 +36,24 @@ function parseSummary(text: string) {
   return { paragraphs, tags };
 }
 
+const normalizeSourceIdentity = (value: string) => value.trim().replace(/^@/, '').toLowerCase();
+
+export function resolveSocialSource(
+  update: Pick<StudioUpdate, 'sourceId' | 'platform' | 'authorName'>,
+  sources: SocialSource[],
+): SocialSource | undefined {
+  if (update.sourceId !== undefined) {
+    const exactSource = sources.find((source) => source.id === update.sourceId);
+    if (exactSource) return exactSource;
+  }
+
+  const authorIdentity = normalizeSourceIdentity(update.authorName);
+  return sources.find((source) => source.platform === update.platform && (
+    normalizeSourceIdentity(source.displayName) === authorIdentity
+    || normalizeSourceIdentity(source.handle) === authorIdentity
+  ));
+}
+
 interface DiaryMediaProps {
   update: StudioUpdate;
   aspect: DisplayAspect;
@@ -59,7 +78,7 @@ function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, 
       : 'aspect-video w-full max-w-[68.75rem] mx-auto rounded-2xl';
 
   const detectImageAspect = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    if (videoId) return;
+    if (videoId || !['image', 'carousel'].includes(update.contentType)) return;
     const { naturalWidth, naturalHeight } = event.currentTarget;
     if (!naturalWidth || !naturalHeight) return;
     const ratio = naturalWidth / naturalHeight;
@@ -127,7 +146,7 @@ function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, 
       {isPreviewActive && videoId && (
         <div className="absolute inset-0 z-0 bg-surface-container-lowest transition-opacity duration-300">
           <iframe
-            className="h-full w-full pointer-events-none scale-[1.05]"
+            className="h-full w-full pointer-events-none"
             src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${encodeURIComponent(videoId)}&enablejsapi=1&rel=0&playsinline=1`}
             title={`${update.title} - Preview`}
             allow="autoplay; encrypted-media"
@@ -166,8 +185,8 @@ function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, 
         <button
           type="button"
           onClick={() => setPlaying(true)}
-          className={`absolute inset-0 z-10 grid cursor-pointer place-items-center bg-background/30 transition-all duration-300 hover:bg-background/40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary ${
-            isPreviewActive ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          className={`absolute inset-0 z-10 grid cursor-pointer place-items-center transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary ${
+            isPreviewActive ? 'bg-background/10 hover:bg-background/25' : 'bg-background/30 hover:bg-background/40'
           }`}
           aria-label={`${playLabel}: ${update.title}`}
         >
@@ -307,16 +326,16 @@ export default function StudioDiary() {
         : update.platform === 'youtube' ? 'YouTube · Studio SenhorEle' : t.diary.manual;
 
     const { paragraphs, tags } = parseSummary(update.summary);
-    const sourceMeta = sources.find((s) =>
-      (update.sourceId && s.id === update.sourceId) ||
-      s.displayName.toLowerCase() === update.authorName.toLowerCase()
-    );
+    const sourceMeta = resolveSocialSource(update, sources);
 
     const authorAvatar = sourceMeta?.avatarUrl;
-    const authorDesc = sourceMeta?.description || (isPartner ? 'Canal parceiro com foco em restauração, cultura e acervo de Fuscas e VW clássicos.' : undefined);
+    const authorDesc = sourceMeta?.description || (isPartner ? t.diary.partnerFallbackDescription : undefined);
     const channelUrl = sourceMeta?.publicUrl || update.ctaUrl || update.canonicalUrl;
     const originalUrl = update.ctaUrl || update.canonicalUrl;
-    const aspect = detectedAspects[update.id] || update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
+    const canonicalVideoId = youtubeId(update.canonicalUrl);
+    const aspect = canonicalVideoId && PORTRAIT_YOUTUBE_IDS.has(canonicalVideoId)
+      ? 'portrait'
+      : detectedAspects[update.id] || update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
     const publishedDate = new Intl.DateTimeFormat(locale, {
       day: '2-digit',
       month: 'short',
@@ -383,7 +402,7 @@ export default function StudioDiary() {
         <span aria-hidden="true" className="text-secondary/55">•</span>
         <span>{update.platform}</span>
         <span aria-hidden="true" className="text-secondary/55">•</span>
-        <span>{update.contentType}</span>
+        <span>{t.diary.contentTypes[update.contentType]}</span>
         {update.location && (
           <>
             <span aria-hidden="true" className="text-secondary/55">•</span>
@@ -424,7 +443,7 @@ export default function StudioDiary() {
             href={channelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
           >
             {update.platform === 'youtube' ? <Youtube size={15} aria-hidden="true" /> : update.platform === 'instagram' ? <Instagram size={15} aria-hidden="true" /> : <ExternalLink size={15} aria-hidden="true" />}
             {update.platform === 'youtube' ? 'YouTube' : update.platform === 'instagram' ? 'Instagram' : t.diary.openOriginal}
@@ -435,7 +454,7 @@ export default function StudioDiary() {
             href={originalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
           >
             {update.ctaLabel || t.diary.openOriginal}
             <ExternalLink size={15} aria-hidden="true" />
@@ -444,7 +463,7 @@ export default function StudioDiary() {
         <button
           type="button"
           onClick={() => share(update)}
-          className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
         >
           <Share2 size={15} aria-hidden="true" />
           {copiedId === update.id ? t.diary.copied : t.diary.share}

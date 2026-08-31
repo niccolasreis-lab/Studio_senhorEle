@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { youtubeId } from '../src/components/StudioDiary';
+import { resolveSocialSource, youtubeId } from '../src/components/StudioDiary';
+import type { SocialSource, StudioUpdate } from '../src/services/studioUpdateService';
 
 const service = readFileSync(resolve('src/services/studioUpdateService.ts'), 'utf8');
 const admin = readFileSync(resolve('src/components/DiaryAdminPanel.tsx'), 'utf8');
@@ -47,6 +48,31 @@ describe('automatic Studio Diary workflow', () => {
   it('keeps desktop-only muted hover previews without enabling them on touch', () => {
     expect(publicDiary).toContain("matchMedia('(hover: hover) and (pointer: fine)')");
     expect(publicDiary).toContain('autoplay=1&mute=1&controls=0&loop=1');
+    expect(publicDiary.match(/isPreviewActive \? 'opacity-0 pointer-events-none'/g)).toHaveLength(1);
+    expect(publicDiary).not.toContain('pointer-events-none scale-[1.05]');
+  });
+
+  it('keeps touch actions large and localizes imported content types', () => {
+    expect(publicDiary).toContain('min-h-11');
+    expect(publicDiary).toContain('t.diary.contentTypes[update.contentType]');
+    expect(publicDiary).toContain("const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk'])");
+  });
+});
+
+describe('Diary source resolution', () => {
+  const sources: SocialSource[] = [
+    { id: 1, sourceKey: 'instagram', platform: 'instagram', handle: '@studiosenhorele', displayName: 'Studio SenhorEle', description: '', editorialRole: 'official', publicUrl: 'https://www.instagram.com/studiosenhorele/', isActive: true },
+    { id: 2, sourceKey: 'youtube', platform: 'youtube', handle: '@studiosenhorele', displayName: 'Studio SenhorEle', description: '', editorialRole: 'official', publicUrl: 'https://www.youtube.com/@studiosenhorele', isActive: true },
+  ];
+
+  it('prefers the persisted source id when display names collide', () => {
+    const update = { sourceId: 2, platform: 'youtube', authorName: 'Studio SenhorEle' } as Pick<StudioUpdate, 'sourceId' | 'platform' | 'authorName'>;
+    expect(resolveSocialSource(update, sources)?.publicUrl).toContain('youtube.com');
+  });
+
+  it('constrains fallback matching to the publication platform', () => {
+    const update = { platform: 'youtube', authorName: 'Studio SenhorEle' } as Pick<StudioUpdate, 'sourceId' | 'platform' | 'authorName'>;
+    expect(resolveSocialSource(update, sources)?.id).toBe(2);
   });
 });
 

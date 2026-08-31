@@ -122,6 +122,15 @@ export interface Translations {
     watchOnYoutube: string;
     hashtagsTitle: string;
     captionTitle: string;
+    partnerFallbackDescription: string;
+    contentTypes: {
+      image: string;
+      carousel: string;
+      reel: string;
+      video: string;
+      event: string;
+      note: string;
+    };
   };
   instagramCard: {
     viewPost: string;
@@ -309,6 +318,15 @@ export const translations: Record<Language, Translations> = {
       watchOnYoutube: 'Assistir no YouTube',
       hashtagsTitle: 'Tags & Tópicos',
       captionTitle: 'Legenda',
+      partnerFallbackDescription: 'Canal parceiro com foco em restauração, cultura e acervo de Fuscas e VW clássicos.',
+      contentTypes: {
+        image: 'Imagem',
+        carousel: 'Carrossel',
+        reel: 'Reel',
+        video: 'Vídeo',
+        event: 'Evento',
+        note: 'Nota',
+      },
     },
     instagramCard: {
       viewPost: 'Ver no Instagram',
@@ -494,6 +512,15 @@ export const translations: Record<Language, Translations> = {
       watchOnYoutube: 'Watch on YouTube',
       hashtagsTitle: 'Tags & Topics',
       captionTitle: 'Caption',
+      partnerFallbackDescription: 'Partner channel focused on restoration, culture, and the preservation of Beetles and classic Volkswagens.',
+      contentTypes: {
+        image: 'Image',
+        carousel: 'Carousel',
+        reel: 'Reel',
+        video: 'Video',
+        event: 'Event',
+        note: 'Note',
+      },
     },
     instagramCard: {
       viewPost: 'View on Instagram',
@@ -679,6 +706,15 @@ export const translations: Record<Language, Translations> = {
       watchOnYoutube: 'Auf YouTube ansehen',
       hashtagsTitle: 'Tags & Themen',
       captionTitle: 'Beschreibung',
+      partnerFallbackDescription: 'Partnerkanal mit Schwerpunkt auf Restaurierung, Kultur und der Bewahrung klassischer Käfer und Volkswagen.',
+      contentTypes: {
+        image: 'Bild',
+        carousel: 'Karussell',
+        reel: 'Reel',
+        video: 'Video',
+        event: 'Veranstaltung',
+        note: 'Notiz',
+      },
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',
