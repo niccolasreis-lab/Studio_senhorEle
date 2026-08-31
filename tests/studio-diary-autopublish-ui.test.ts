@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveSocialSource, youtubeId } from '../src/components/StudioDiary';
+import { resolveDisplayAspect, resolveSocialSource, youtubeId } from '../src/components/StudioDiary';
 import { normalizeImportedTitle, type SocialSource, type StudioUpdate } from '../src/services/studioUpdateService';
 
 const service = readFileSync(resolve('src/services/studioUpdateService.ts'), 'utf8');
@@ -57,6 +57,7 @@ describe('automatic Studio Diary workflow', () => {
     expect(publicDiary).toContain('t.diary.contentTypes[update.contentType]');
     expect(publicDiary).toContain("'WRqgdPP1GwY'");
     expect(publicDiary).toContain("'t70DJ_HYyEM'");
+    expect(publicDiary).toContain("'dl3WJcEyr0Q'");
   });
 });
 
@@ -88,6 +89,26 @@ describe('YouTube URL validation', () => {
     expect(youtubeId('https://example.com/watch?v=zpCgm9P83Iw')).toBeNull();
     expect(youtubeId('https://youtube.com.evil.test/watch?v=zpCgm9P83Iw')).toBeNull();
     expect(youtubeId('https://youtube.com/watch?v=short')).toBeNull();
+  });
+});
+
+describe('Diary media orientation', () => {
+  it('forces the confirmed Ratlook YouTube Short into the portrait composition', () => {
+    expect(resolveDisplayAspect({
+      id: 3029,
+      canonicalUrl: 'https://www.youtube.com/watch?v=dl3WJcEyr0Q',
+      displayAspect: 'landscape',
+      contentType: 'video',
+    })).toBe('portrait');
+  });
+
+  it('preserves the persisted orientation for ordinary YouTube videos', () => {
+    expect(resolveDisplayAspect({
+      id: 1,
+      canonicalUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+      displayAspect: 'landscape',
+      contentType: 'video',
+    })).toBe('landscape');
   });
 });
 

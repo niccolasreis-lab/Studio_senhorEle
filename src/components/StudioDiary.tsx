@@ -8,7 +8,7 @@ import PostMediaLayout from './PostMediaLayout';
 
 const PAGE_SIZE = 6;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
-const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk', 'WRqgdPP1GwY', 't70DJ_HYyEM']);
+const PORTRAIT_YOUTUBE_IDS = new Set(['zpCgm9P83Iw', 'zM4Xta25FZk', 'WRqgdPP1GwY', 't70DJ_HYyEM', 'dl3WJcEyr0Q']);
 
 export function youtubeId(url?: string): string | null {
   if (!url) return null;
@@ -24,6 +24,12 @@ export function youtubeId(url?: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function resolveDisplayAspect(update: Pick<StudioUpdate, 'id' | 'canonicalUrl' | 'displayAspect' | 'contentType'>, detected?: DisplayAspect): DisplayAspect {
+  const canonicalVideoId = youtubeId(update.canonicalUrl);
+  if (canonicalVideoId && PORTRAIT_YOUTUBE_IDS.has(canonicalVideoId)) return 'portrait';
+  return detected || update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
 }
 
 function parseSummary(text: string) {
@@ -332,10 +338,7 @@ export default function StudioDiary() {
     const authorDesc = sourceMeta?.description || (isPartner ? t.diary.partnerFallbackDescription : undefined);
     const channelUrl = sourceMeta?.publicUrl || update.ctaUrl || update.canonicalUrl;
     const originalUrl = update.ctaUrl || update.canonicalUrl;
-    const canonicalVideoId = youtubeId(update.canonicalUrl);
-    const aspect = canonicalVideoId && PORTRAIT_YOUTUBE_IDS.has(canonicalVideoId)
-      ? 'portrait'
-      : detectedAspects[update.id] || update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
+    const aspect = resolveDisplayAspect(update, detectedAspects[update.id]);
     const publishedDate = new Intl.DateTimeFormat(locale, {
       day: '2-digit',
       month: 'short',

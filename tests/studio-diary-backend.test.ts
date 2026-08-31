@@ -19,6 +19,10 @@ const portraitCorrectionMigration = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20260831130000_correct_diary_youtube_portrait.sql'),
   'utf8',
 );
+const ratlookPortraitMigration = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260831181438_correct_ratlook_youtube_portrait.sql'),
+  'utf8',
+);
 const cronSetup = readFileSync(
   resolve(process.cwd(), 'supabase/social-sync-setup.example.sql'),
   'utf8',
@@ -86,9 +90,12 @@ describe('social synchronization contract', () => {
     expect(edgeFunction).toContain("['zM4Xta25FZk', 'portrait']");
     expect(edgeFunction).toContain("['WRqgdPP1GwY', 'portrait']");
     expect(edgeFunction).toContain("['t70DJ_HYyEM', 'portrait']");
+    expect(edgeFunction).toContain("['dl3WJcEyr0Q', 'portrait']");
     expect(edgeFunction).toContain("display_aspect: youtubeAspectOverrides.get(externalId) || (normalizedTitle.portrait ? 'portrait' : 'landscape')");
     expect(portraitCorrectionMigration).toContain("external_id = 'zM4Xta25FZk'");
     expect(portraitCorrectionMigration).toContain("display_aspect = 'portrait'");
+    expect(ratlookPortraitMigration).toContain("external_id = 'dl3WJcEyr0Q'");
+    expect(ratlookPortraitMigration).toContain("display_aspect = 'portrait'");
   });
 
   it('uses conflict-safe idempotent writes and independent per-source failures', () => {

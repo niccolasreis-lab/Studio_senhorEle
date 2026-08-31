@@ -85,6 +85,7 @@ const youtubeAspectOverrides = new Map<string, ImportedUpdate['display_aspect']>
   ['zM4Xta25FZk', 'portrait'],
   ['WRqgdPP1GwY', 'portrait'],
   ['t70DJ_HYyEM', 'portrait'],
+  ['dl3WJcEyr0Q', 'portrait'],
 ]);
 
 async function secretsMatch(expected: string, supplied: string) {
