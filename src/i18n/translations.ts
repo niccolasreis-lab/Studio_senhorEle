@@ -121,6 +121,7 @@ export interface Translations {
     subscribeChannel: string;
     watchOnYoutube: string;
     hashtagsTitle: string;
+    captionTitle: string;
   };
   instagramCard: {
     viewPost: string;
@@ -307,6 +308,7 @@ export const translations: Record<Language, Translations> = {
       subscribeChannel: 'Inscrever-se no Canal',
       watchOnYoutube: 'Assistir no YouTube',
       hashtagsTitle: 'Tags & Tópicos',
+      captionTitle: 'Legenda',
     },
     instagramCard: {
       viewPost: 'Ver no Instagram',
@@ -491,6 +493,7 @@ export const translations: Record<Language, Translations> = {
       subscribeChannel: 'Subscribe to Channel',
       watchOnYoutube: 'Watch on YouTube',
       hashtagsTitle: 'Tags & Topics',
+      captionTitle: 'Caption',
     },
     instagramCard: {
       viewPost: 'View on Instagram',
@@ -675,6 +678,7 @@ export const translations: Record<Language, Translations> = {
       subscribeChannel: 'Kanal abonnieren',
       watchOnYoutube: 'Auf YouTube ansehen',
       hashtagsTitle: 'Tags & Themen',
+      captionTitle: 'Beschreibung',
     },
     instagramCard: {
       viewPost: 'Auf Instagram ansehen',

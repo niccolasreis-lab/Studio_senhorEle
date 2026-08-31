@@ -6,6 +6,7 @@ import { youtubeId } from '../src/components/StudioDiary';
 const service = readFileSync(resolve('src/services/studioUpdateService.ts'), 'utf8');
 const admin = readFileSync(resolve('src/components/DiaryAdminPanel.tsx'), 'utf8');
 const publicDiary = readFileSync(resolve('src/components/StudioDiary.tsx'), 'utf8');
+const postMediaLayout = readFileSync(resolve('src/components/PostMediaLayout.tsx'), 'utf8');
 const navigation = readFileSync(resolve('src/components/Navigation.tsx'), 'utf8');
 const languageSwitcher = readFileSync(resolve('src/components/LanguageSwitcher.tsx'), 'utf8');
 
@@ -32,8 +33,20 @@ describe('automatic Studio Diary workflow', () => {
   });
 
   it('always renders diary dates with the Gregorian calendar', () => {
-    expect(publicDiary.match(/calendar: 'gregory'/g)).toHaveLength(2);
+    expect(publicDiary.match(/calendar: 'gregory'/g)).toHaveLength(3);
     expect(admin).toContain("toLocaleString('pt-BR', { calendar: 'gregory' })");
+  });
+
+  it('uses distinct editorial compositions for portrait and landscape media', () => {
+    expect(postMediaLayout).toContain('data-media-layout="portrait"');
+    expect(postMediaLayout).toContain('md:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]');
+    expect(publicDiary).toContain('onAspectDetected');
+    expect(publicDiary).toContain('naturalWidth / naturalHeight');
+  });
+
+  it('keeps desktop-only muted hover previews without enabling them on touch', () => {
+    expect(publicDiary).toContain("matchMedia('(hover: hover) and (pointer: fine)')");
+    expect(publicDiary).toContain('autoplay=1&mute=1&controls=0&loop=1');
   });
 });
 
