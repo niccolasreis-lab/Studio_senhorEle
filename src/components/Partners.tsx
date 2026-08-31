@@ -80,6 +80,16 @@ export default function Partners() {
       imageAlt: t.partners.fuscaNaFotoImageAlt,
       logoClassName: 'rounded-full px-5 py-2 sm:px-7',
     },
+    {
+      id: 7,
+      name: 'Air Volks Garage',
+      category: t.partners.categories.automotiveServices,
+      website: 'https://www.instagram.com/airvolksgarage/',
+      linkLabel: t.partners.instagramDestination,
+      logo: 'https://i.imgur.com/JXjRRz6.jpeg',
+      logoStatus: 'available',
+      logoClassName: 'px-3 py-1 sm:px-4 sm:py-2',
+    },
   ];
 
   return (
