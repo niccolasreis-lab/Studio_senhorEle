@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, ChevronRight, ExternalLink, Instagram, Play, RefreshCw, Share2, Youtube } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageContext';
-import { SocialSource, StudioUpdate, StudioUpdateService } from '../services/studioUpdateService';
+import { DisplayAspect, SocialSource, StudioUpdate, StudioUpdateService } from '../services/studioUpdateService';
 import { buildShareUrl } from '../utils/share';
+import PostMediaLayout from './PostMediaLayout';
 
 const PAGE_SIZE = 6;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
@@ -36,25 +37,35 @@ function parseSummary(text: string) {
 
 interface DiaryMediaProps {
   update: StudioUpdate;
+  aspect: DisplayAspect;
   playLabel: string;
   isPreviewActive: boolean;
   onHoverStart: (id: number) => void;
   onHoverEnd: (id: number) => void;
+  onAspectDetected: (id: number, aspect: DisplayAspect) => void;
 }
 
-function DiaryMedia({ update, playLabel, isPreviewActive, onHoverStart, onHoverEnd }: DiaryMediaProps) {
+function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, onHoverEnd, onAspectDetected }: DiaryMediaProps) {
   const [playing, setPlaying] = useState(false);
   const playerRef = useRef<HTMLIFrameElement>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoId = youtubeId(update.canonicalUrl);
-  const aspect = update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
   const shouldReduceMotion = useReducedMotion();
 
   const frameClass = aspect === 'portrait'
-    ? 'aspect-[9/16] max-h-[76vh] max-w-[24rem] mx-auto rounded-2xl'
+    ? 'aspect-[9/16] w-full max-w-[25rem] mx-auto rounded-2xl'
     : aspect === 'square'
       ? 'aspect-square max-w-[42rem] mx-auto rounded-2xl'
-      : 'aspect-video w-full rounded-2xl';
+      : 'aspect-video w-full max-w-[68.75rem] mx-auto rounded-2xl';
+
+  const detectImageAspect = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    if (videoId) return;
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+    if (!naturalWidth || !naturalHeight) return;
+    const ratio = naturalWidth / naturalHeight;
+    const detected: DisplayAspect = ratio < 0.9 ? 'portrait' : ratio > 1.1 ? 'landscape' : 'square';
+    onAspectDetected(update.id, detected);
+  };
 
   useEffect(() => {
     if (playing) playerRef.current?.focus();
@@ -138,6 +149,7 @@ function DiaryMedia({ update, playLabel, isPreviewActive, onHoverStart, onHoverE
             alt=""
             loading="lazy"
             decoding="async"
+            onLoad={detectImageAspect}
             className={`h-full w-full transition-transform duration-500 group-hover:scale-[1.02] ${
               aspect === 'portrait' ? 'object-contain' : 'object-cover'
             }`}
@@ -195,6 +207,7 @@ export default function StudioDiary() {
   const [deepLinkedUpdate, setDeepLinkedUpdate] = useState<StudioUpdate | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [activeHoverPreviewId, setActiveHoverPreviewId] = useState<number | null>(null);
+  const [detectedAspects, setDetectedAspects] = useState<Record<number, DisplayAspect>>({});
   const deepLinkedShareId = useMemo(() => new URLSearchParams(window.location.search).get('d'), []);
   const locale = language === 'pt' ? 'pt-BR' : language === 'de' ? 'de-DE' : 'en-US';
 
@@ -204,6 +217,10 @@ export default function StudioDiary() {
 
   const handleHoverEnd = useCallback((id: number) => {
     setActiveHoverPreviewId((current) => (current === id ? null : current));
+  }, []);
+
+  const handleAspectDetected = useCallback((id: number, aspect: DisplayAspect) => {
+    setDetectedAspects((current) => (current[id] === aspect ? current : { ...current, [id]: aspect }));
   }, []);
 
   useEffect(() => {
@@ -298,6 +315,142 @@ export default function StudioDiary() {
     const authorAvatar = sourceMeta?.avatarUrl;
     const authorDesc = sourceMeta?.description || (isPartner ? 'Canal parceiro com foco em restauração, cultura e acervo de Fuscas e VW clássicos.' : undefined);
     const channelUrl = sourceMeta?.publicUrl || update.ctaUrl || update.canonicalUrl;
+    const originalUrl = update.ctaUrl || update.canonicalUrl;
+    const aspect = detectedAspects[update.id] || update.displayAspect || (update.contentType === 'reel' ? 'portrait' : 'landscape');
+    const publishedDate = new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      calendar: 'gregory',
+    }).format(new Date(update.publishedAt));
+
+    const media = (
+      <DiaryMedia
+        update={update}
+        aspect={aspect}
+        playLabel={t.diary.playVideo}
+        isPreviewActive={activeHoverPreviewId === update.id}
+        onHoverStart={handleHoverStart}
+        onHoverEnd={handleHoverEnd}
+        onAspectDetected={handleAspectDetected}
+      />
+    );
+
+    const author = (
+      <div className="flex items-center gap-3.5 border-b border-surface-variant/35 pb-5">
+        {authorAvatar ? (
+          <img
+            src={authorAvatar}
+            alt={update.authorName}
+            className="h-11 w-11 rounded-full border border-secondary/40 object-cover shadow-sm"
+          />
+        ) : (
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-secondary/30 bg-secondary/10 text-secondary">
+            {update.platform === 'youtube' ? <Youtube size={20} /> : update.platform === 'instagram' ? <Instagram size={20} /> : <CalendarDays size={20} />}
+          </div>
+        )}
+        <div className="min-w-0">
+          <h4 className="truncate text-base font-bold leading-snug text-parchment">{update.authorName}</h4>
+          <p className="truncate text-xs text-on-surface-variant">
+            {sourceMeta?.handle || (isPartner ? t.diary.channelPartner : sourceLabel)}
+          </p>
+        </div>
+      </div>
+    );
+
+    const summary = (paragraphs.length > 0 || update.summary) ? (
+      <div>
+        <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.16em] text-secondary/85">
+          {t.diary.captionTitle}
+        </span>
+        {paragraphs.length > 0 ? (
+          <div className="max-w-[65ch] space-y-4 font-body-lg text-base leading-relaxed text-parchment/90 md:text-lg">
+            {paragraphs.map((paragraph, pIdx) => (
+              <p key={pIdx} className="whitespace-pre-line break-words">{paragraph}</p>
+            ))}
+          </div>
+        ) : (
+          <p className="max-w-[65ch] whitespace-pre-line break-words font-body-lg text-base leading-relaxed text-parchment/90 md:text-lg">
+            {update.summary}
+          </p>
+        )}
+      </div>
+    ) : null;
+
+    const metadata = (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-label-caps uppercase tracking-[0.12em] text-on-surface-variant">
+        <time dateTime={update.publishedAt}>{publishedDate}</time>
+        <span aria-hidden="true" className="text-secondary/55">•</span>
+        <span>{update.platform}</span>
+        <span aria-hidden="true" className="text-secondary/55">•</span>
+        <span>{update.contentType}</span>
+        {update.location && (
+          <>
+            <span aria-hidden="true" className="text-secondary/55">•</span>
+            <span>{update.location}</span>
+          </>
+        )}
+      </div>
+    );
+
+    const eventDetails = update.eventStartsAt ? (
+      <div className="flex items-center gap-3 border-l-2 border-secondary/45 pl-4 text-sm text-parchment/90">
+        <CalendarDays className="shrink-0 text-secondary" size={19} />
+        <time dateTime={update.eventStartsAt}>
+          {new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', calendar: 'gregory' }).format(new Date(update.eventStartsAt))}
+        </time>
+      </div>
+    ) : null;
+
+    const tagList = tags.length > 0 ? (
+      <div>
+        <span className="mb-2.5 block text-[11px] font-bold uppercase tracking-wider text-secondary/80">
+          {t.diary.hashtagsTitle}
+        </span>
+        <div className="flex flex-wrap gap-x-3 gap-y-2">
+          {tags.map((tag) => (
+            <span key={tag} className="text-xs font-mono tracking-tight text-secondary">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
+    const actions = (
+      <div className="flex flex-wrap gap-2.5">
+        {channelUrl && (
+          <a
+            href={channelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+          >
+            {update.platform === 'youtube' ? <Youtube size={15} aria-hidden="true" /> : update.platform === 'instagram' ? <Instagram size={15} aria-hidden="true" /> : <ExternalLink size={15} aria-hidden="true" />}
+            {update.platform === 'youtube' ? 'YouTube' : update.platform === 'instagram' ? 'Instagram' : t.diary.openOriginal}
+          </a>
+        )}
+        {originalUrl && originalUrl !== channelUrl && (
+          <a
+            href={originalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+          >
+            {update.ctaLabel || t.diary.openOriginal}
+            <ExternalLink size={15} aria-hidden="true" />
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() => share(update)}
+          className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+        >
+          <Share2 size={15} aria-hidden="true" />
+          {copiedId === update.id ? t.diary.copied : t.diary.share}
+        </button>
+      </div>
+    );
 
     return (
       <motion.article
@@ -310,7 +463,7 @@ export default function StudioDiary() {
         className="border-t border-surface-variant/35 py-10 lg:py-14 first:border-t-0 first:pt-4"
       >
         {/* HEADER EDITORIAL (LARGURA TOTAL) */}
-        <header className="mb-6">
+        <header className="mb-5">
           <div className="flex flex-wrap items-center gap-2.5 text-xs font-label-caps uppercase tracking-[0.12em] text-secondary">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 border border-secondary/25 px-3 py-1 text-secondary font-bold">
               {update.platform === 'instagram' ? <Instagram size={14} aria-hidden="true" /> : update.platform === 'youtube' ? <Youtube size={14} aria-hidden="true" /> : <CalendarDays size={14} aria-hidden="true" />}
@@ -328,136 +481,41 @@ export default function StudioDiary() {
             )}
           </div>
 
-          <h3 className="mt-4 break-words text-balance font-headline-lg text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-bold leading-tight text-parchment tracking-tight">
+          <h3 className="mt-4 max-w-[900px] break-words text-balance font-headline-lg text-[clamp(1.75rem,3vw,2.875rem)] font-bold leading-[1.02] text-parchment tracking-tight">
             {update.title}
           </h3>
         </header>
 
-        {/* MEDIA EM DESTAQUE (PROTAGONISMO DO VÍDEO) */}
-        <div className="my-6 sm:my-8">
-          <DiaryMedia
-            update={update}
-            playLabel={t.diary.playVideo}
-            isPreviewActive={activeHoverPreviewId === update.id}
-            onHoverStart={handleHoverStart}
-            onHoverEnd={handleHoverEnd}
-          />
-        </div>
-
-        {/* GRID DE CONTEÚDO E DETALHES (ABAIXO DO VÍDEO) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px] gap-8 xl:gap-12 items-start mt-6 sm:mt-8">
-          {/* COLUNA ESQUERDA: DESCRIÇÃO E TAGS */}
-          <div className="min-w-0 space-y-6">
-            {paragraphs.length > 0 ? (
-              <div className="space-y-4 font-body-lg text-base md:text-lg leading-relaxed text-parchment/90">
-                {paragraphs.map((paragraph, pIdx) => (
-                  <p key={pIdx} className="whitespace-pre-line break-words">{paragraph}</p>
-                ))}
-              </div>
-            ) : update.summary ? (
-              <p className="whitespace-pre-line break-words font-body-lg text-base md:text-lg leading-relaxed text-parchment/90">
-                {update.summary}
-              </p>
-            ) : null}
-
-            {update.eventStartsAt && (
-              <div className="rounded-xl bg-surface-container-high/40 border border-secondary/20 p-4 text-sm text-parchment/90 flex items-center gap-3">
-                <CalendarDays className="text-secondary shrink-0" size={20} />
-                <div>
-                  <span className="font-bold block text-secondary text-xs uppercase tracking-wider">Data do Evento</span>
-                  <time dateTime={update.eventStartsAt}>
-                    {new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', calendar: 'gregory' }).format(new Date(update.eventStartsAt))}
-                  </time>
-                </div>
-              </div>
-            )}
-
-            {tags.length > 0 && (
-              <div className="pt-2">
-                <span className="text-[11px] font-label-caps uppercase tracking-wider text-secondary/80 block mb-2.5 font-bold">
-                  {t.diary.hashtagsTitle}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag, tIdx) => (
-                    <span
-                      key={tIdx}
-                      className="inline-flex items-center rounded-lg bg-surface-container-high/70 border border-secondary/20 px-3 py-1 text-xs text-secondary font-mono tracking-tight transition-colors hover:border-secondary/50"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* COLUNA DIREITA: CARD DO CANAL/AUTOR E AÇÕES */}
-          <div className="space-y-5 lg:sticky lg:top-28">
-            {/* BANNER / BOX DO AUTOR OU CANAL PARCEIRO */}
-            <div className="rounded-2xl border border-surface-variant/40 bg-surface-container/60 p-5 shadow-xl relative overflow-hidden backdrop-blur-sm">
-              <div className="flex items-center gap-3.5 mb-3">
-                {authorAvatar ? (
-                  <img
-                    src={authorAvatar}
-                    alt={update.authorName}
-                    className="h-12 w-12 rounded-full object-cover border border-secondary/40 shadow-sm"
-                  />
-                ) : (
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-secondary/15 text-secondary border border-secondary/30">
-                    {update.platform === 'youtube' ? <Youtube size={22} /> : update.platform === 'instagram' ? <Instagram size={22} /> : <CalendarDays size={22} />}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <h4 className="font-bold text-parchment text-base leading-snug truncate">{update.authorName}</h4>
-                  <span className="text-[10px] font-label-caps uppercase tracking-widest text-secondary block font-bold">
-                    {isPartner ? t.diary.channelPartner : t.diary.manual}
-                  </span>
-                </div>
-              </div>
-
-              {authorDesc && (
-                <p className="text-xs leading-relaxed text-on-surface-variant mb-4 line-clamp-3">
-                  {authorDesc}
-                </p>
-              )}
-
-              {channelUrl && (
-                <a
-                  href={channelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-xs font-bold text-background transition-all hover:bg-amber-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary shadow-md hover:shadow-secondary/20"
-                >
-                  {update.platform === 'youtube' ? t.diary.subscribeChannel : t.diary.openOriginal}
-                  <ExternalLink size={14} aria-hidden="true" />
-                </a>
-              )}
+        <PostMediaLayout
+          orientation={aspect}
+          media={media}
+          portraitDetails={(
+            <div className="space-y-5">
+              {author}
+              {summary}
+              {metadata}
+              {eventDetails}
+              {tagList}
+              {actions}
+              {authorDesc && <p className="max-w-[65ch] text-xs leading-relaxed text-on-surface-variant">{authorDesc}</p>}
             </div>
-
-            {/* BOTÕES DE AÇÃO */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5">
-              {(update.ctaUrl || update.canonicalUrl) && (
-                <a
-                  href={update.ctaUrl || update.canonicalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-secondary/30 bg-surface-container-high/80 px-4 py-2.5 text-xs font-bold text-parchment transition-all hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
-                >
-                  {update.ctaLabel || (update.platform === 'youtube' ? t.diary.watchOnYoutube : t.diary.openOriginal)}
-                  <ExternalLink size={15} aria-hidden="true" />
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => share(update)}
-                className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
-              >
-                <Share2 size={15} aria-hidden="true" />
-                {copiedId === update.id ? t.diary.copied : t.diary.share}
-              </button>
+          )}
+          landscapeContent={(
+            <div className="space-y-6">
+              {summary}
+              {metadata}
+              {eventDetails}
+              {tagList}
             </div>
-          </div>
-        </div>
+          )}
+          landscapeAside={(
+            <div className="space-y-5 lg:sticky lg:top-28">
+              {author}
+              {authorDesc && <p className="text-xs leading-relaxed text-on-surface-variant">{authorDesc}</p>}
+              {actions}
+            </div>
+          )}
+        />
       </motion.article>
     );
   };
