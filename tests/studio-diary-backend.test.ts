@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { normalizeVehicleForCollection } from '../src/services/customVehicleService';
 
 const migration = readFileSync(
-  resolve(process.cwd(), 'supabase/migrations/20260828101459_add_guests_and_studio_diary.sql'),
+  resolve(process.cwd(), 'supabase/migrations/20260828171804_add_guests_and_studio_diary.sql'),
   'utf8',
 );
 const autoPublishMigration = readFileSync(
-  resolve(process.cwd(), 'supabase/migrations/20260828114542_auto_publish_studio_diary.sql'),
+  resolve(process.cwd(), 'supabase/migrations/20260828171814_auto_publish_studio_diary.sql'),
   'utf8',
 );
 const edgeFunction = readFileSync(
@@ -94,6 +94,13 @@ describe('social synchronization contract', () => {
     expect(edgeFunction).toContain("playlistUrl.searchParams.set('pageToken', pageToken)");
     expect(edgeFunction).toContain('playlistPayload.nextPageToken');
     expect(edgeFunction).toContain('payload.paging?.next');
+  });
+
+  it('refreshes YouTube profile metadata independently from hourly sync attempts', () => {
+    expect(migration).toContain('profile_refreshed_at timestamptz');
+    expect(edgeFunction).toContain('source.profile_refreshed_at');
+    expect(edgeFunction).toContain('profile_refreshed_at: new Date().toISOString()');
+    expect(edgeFunction).not.toMatch(/profileRefreshDue[\s\S]{0,300}source\.last_synced_at/);
   });
 
   it('accepts only a cron secret or an authenticated admin and documents gateway configuration', () => {

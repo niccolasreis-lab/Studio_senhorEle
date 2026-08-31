@@ -318,7 +318,7 @@ export default function StudioDiary() {
             </span>
             <span aria-hidden="true" className="text-surface-variant">/</span>
             <time dateTime={update.publishedAt} className="text-on-surface-variant font-medium">
-              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(update.publishedAt))}
+              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', calendar: 'gregory' }).format(new Date(update.publishedAt))}
             </time>
             {update.location && (
               <>
@@ -366,7 +366,7 @@ export default function StudioDiary() {
                 <div>
                   <span className="font-bold block text-secondary text-xs uppercase tracking-wider">Data do Evento</span>
                   <time dateTime={update.eventStartsAt}>
-                    {new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short' }).format(new Date(update.eventStartsAt))}
+                    {new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', calendar: 'gregory' }).format(new Date(update.eventStartsAt))}
                   </time>
                 </div>
               </div>

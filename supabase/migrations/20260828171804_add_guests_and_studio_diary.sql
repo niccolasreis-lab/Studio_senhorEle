@@ -42,6 +42,7 @@ create table if not exists public.social_sources (
   external_channel_id text,
   uploads_playlist_id text,
   is_active boolean not null default true,
+  profile_refreshed_at timestamptz,
   last_synced_at timestamptz,
   last_sync_status text check (last_sync_status is null or last_sync_status in ('ok', 'error')),
   last_sync_error text,
@@ -105,6 +106,11 @@ create index if not exists studio_updates_public_date_idx
 create index if not exists studio_updates_pending_import_idx
   on public.studio_updates (imported_at desc)
   where editorial_status = 'pending';
+
+-- The admin feed paginates every editorial state by import time, so the
+-- pending-only index above cannot serve that query.
+create index if not exists studio_updates_admin_imported_idx
+  on public.studio_updates (imported_at desc);
 
 create table if not exists public.social_sync_runs (
   id bigint generated always as identity primary key,

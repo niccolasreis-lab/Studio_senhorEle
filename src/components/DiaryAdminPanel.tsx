@@ -169,7 +169,7 @@ export default function DiaryAdminPanel() {
                 <p className="mt-1 text-xs text-on-surface-variant">{source.platform === 'youtube' ? 'YouTube' : 'Instagram'} · {source.editorialRole === 'partner' ? 'Parceiro' : 'Oficial'}</p>
               </div>
               <div className="min-w-0 text-xs sm:text-right">
-                <p className={source.lastSyncStatus === 'error' ? 'text-rose-300' : 'text-on-surface-variant'}>{source.lastSyncStatus === 'error' ? 'Erro na última sincronização' : source.lastSyncedAt ? `Sincronizado em ${new Date(source.lastSyncedAt).toLocaleString('pt-BR')}` : 'Aguardando primeira sincronização'}</p>
+                <p className={source.lastSyncStatus === 'error' ? 'text-rose-300' : 'text-on-surface-variant'}>{source.lastSyncStatus === 'error' ? 'Erro na última sincronização' : source.lastSyncedAt ? `Sincronizado em ${new Date(source.lastSyncedAt).toLocaleString('pt-BR', { calendar: 'gregory' })}` : 'Aguardando primeira sincronização'}</p>
                 {source.lastSyncError && <p className="mt-1 max-w-[48ch] break-words text-rose-300">{source.lastSyncError}</p>}
               </div>
             </div>

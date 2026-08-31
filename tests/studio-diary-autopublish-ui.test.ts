@@ -30,6 +30,11 @@ describe('automatic Studio Diary workflow', () => {
     expect(publicDiary).toContain('t.diary.retry');
     expect(publicDiary).toContain('playerRef.current?.focus()');
   });
+
+  it('always renders diary dates with the Gregorian calendar', () => {
+    expect(publicDiary.match(/calendar: 'gregory'/g)).toHaveLength(2);
+    expect(admin).toContain("toLocaleString('pt-BR', { calendar: 'gregory' })");
+  });
 });
 
 describe('YouTube URL validation', () => {

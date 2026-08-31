@@ -10,7 +10,8 @@ Site institucional, vitrine de veículos clássicos e painel de curadoria do Stu
 ## Funcionalidades
 
 - Vitrine responsiva de veículos clássicos.
-- Fichas técnicas com até três imagens, histórico e curiosidades.
+- Fichas técnicas com até seis imagens, histórico e curiosidades.
+- Coleção editorial de convidados e Diário do Studio sincronizado com canais sociais.
 - Links compartilháveis e atendimento contextual pelo WhatsApp.
 - Área administrativa em `/admin`.
 - Cadastro rápido por marca, modelo e ano.
@@ -47,7 +48,7 @@ Novos veículos começam como rascunho. Registros antigos sem status são interp
 
 Requisitos:
 
-- Node.js 20 ou mais recente
+- Node.js 22 ou mais recente
 - npm
 
 ```bash
@@ -69,6 +70,7 @@ Rotas principais:
 
 ```bash
 npm run dev      # servidor local na porta 3000
+npm test         # suíte automatizada
 npm run lint     # validação TypeScript sem emissão
 npm run build    # build de produção
 npm run preview  # prévia local do build
@@ -91,9 +93,18 @@ supabase/migrations/
 Migrations existentes:
 
 ```text
+20260807192646_create_custom_vehicles_table.sql
+20260807192709_create_vehicle_images_storage.sql
+20260807192932_seed_custom_vehicles.sql
 20260813160000_add_vehicle_status.sql
 20260813173000_harden_custom_vehicles_rls.sql
 20260813190000_enable_authenticated_admin.sql
+20260820114129_harden_vehicle_images_storage.sql
+20260820154036_optimize_custom_vehicles_rls.sql
+20260820154126_optimize_custom_vehicles_admin_rls_claim.sql
+20260820193859_add_custom_vehicles_gallery.sql
+20260828171804_add_guests_and_studio_diary.sql
+20260828171814_auto_publish_studio_diary.sql
 ```
 
 As migrations configuram:
@@ -127,6 +138,7 @@ Uma ação não deve ser tratada como persistida entre dispositivos quando o Sup
 ## Validação antes de publicar
 
 ```bash
+npm test
 npm run lint
 npm run build
 ```
@@ -136,7 +148,7 @@ Além do build, valide manualmente:
 - acesso direto a `/admin`;
 - login e logout pelo Supabase Auth;
 - cadastro rápido e completo;
-- upload de até três imagens;
+- upload de até seis imagens;
 - transições entre todos os status;
 - busca e filtros combinados;
 - exclusão e desfazer;
@@ -154,8 +166,8 @@ permanentes dos canais configurados. O primeiro ciclo considera apenas os 30 dia
 anteriores; itens rejeitados pelo administrador não são recriados pela sincronização.
 
 1. Confirme que o projeto selecionado é `rucqvvollyrlgyekoelq`.
-2. Aplique, em ordem, as migrations `20260828101459_add_guests_and_studio_diary.sql`
-   e `20260828114542_auto_publish_studio_diary.sql`.
+2. Aplique, em ordem, as migrations `20260828171804_add_guests_and_studio_diary.sql`
+   e `20260828171814_auto_publish_studio_diary.sql`.
 3. Configure `YOUTUBE_API_KEY`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID` e
    `SYNC_CRON_SECRET` como secrets da Edge Function.
 4. Publique com `supabase functions deploy sync-social --no-verify-jwt`. A função

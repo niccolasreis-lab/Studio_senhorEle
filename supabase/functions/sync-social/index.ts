@@ -12,6 +12,7 @@ type Source = {
   editorial_role: 'official' | 'partner';
   external_channel_id: string | null;
   uploads_playlist_id: string | null;
+  profile_refreshed_at: string | null;
   last_synced_at: string | null;
 };
 
@@ -114,8 +115,8 @@ async function syncYouTube(source: Source, apiKey: string): Promise<{ updates: I
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const profileRefreshDue = !source.external_channel_id
     || !source.uploads_playlist_id
-    || !source.last_synced_at
-    || Date.now() - Date.parse(source.last_synced_at) >= 7 * 24 * 60 * 60 * 1000;
+    || !source.profile_refreshed_at
+    || Date.now() - Date.parse(source.profile_refreshed_at) >= 7 * 24 * 60 * 60 * 1000;
   let channel: any = null;
   let uploadsPlaylistId = source.uploads_playlist_id;
   const sourcePatch: Record<string, unknown> = {};
@@ -136,6 +137,7 @@ async function syncYouTube(source: Source, apiKey: string): Promise<{ updates: I
       avatar_url: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null,
       external_channel_id: channel.id,
       uploads_playlist_id: uploadsPlaylistId,
+      profile_refreshed_at: new Date().toISOString(),
     });
   }
 
@@ -323,7 +325,6 @@ Deno.serve(async (req) => {
     } catch (error) {
       const message = cleanError(error);
       await admin.from('social_sources').update({
-        last_synced_at: new Date().toISOString(),
         last_sync_status: 'error',
         last_sync_error: message,
         updated_at: new Date().toISOString(),

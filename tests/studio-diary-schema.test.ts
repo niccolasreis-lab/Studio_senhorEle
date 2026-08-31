@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const migration = readFileSync(
-  resolve('supabase/migrations/20260828101459_add_guests_and_studio_diary.sql'),
+  resolve('supabase/migrations/20260828171804_add_guests_and_studio_diary.sql'),
   'utf8',
 ).toLowerCase();
 
