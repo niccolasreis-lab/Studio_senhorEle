@@ -1,0 +1,292 @@
+.curator-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(39, 51, 43, 0.055), transparent 62%),
+    #131313;
+  isolation: isolate;
+}
+
+.curator-ambient__light,
+.curator-ambient__cursor-light,
+.curator-ambient__reflection,
+.curator-ambient__quiet-zone,
+.curator-ambient__card-glow,
+.curator-ambient__grain,
+.curator-ambient__vignette {
+  position: absolute;
+  pointer-events: none;
+}
+
+.curator-ambient__light {
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.curator-ambient__light--green {
+  width: min(76vw, 68rem);
+  aspect-ratio: 1;
+  left: -24rem;
+  bottom: -35rem;
+  background: radial-gradient(circle, rgba(39, 51, 43, 0.14) 0%, rgba(26, 36, 30, 0.065) 35%, transparent 70%);
+  animation: curator-green-drift 58s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+.curator-ambient__light--amber {
+  width: min(58vw, 50rem);
+  aspect-ratio: 1;
+  right: -21rem;
+  top: -27rem;
+  background: radial-gradient(circle, rgba(193, 146, 69, 0.052) 0%, rgba(193, 146, 69, 0.018) 38%, transparent 72%);
+  animation: curator-amber-drift 67s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+.curator-ambient__cursor-light {
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 26.25rem;
+  height: 26.25rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(193, 146, 69, 0.032) 0%, rgba(193, 146, 69, 0.012) 34%, transparent 70%);
+  transform: translate3d(calc(72vw - 13.125rem), calc(38vh - 13.125rem), 0);
+}
+
+.curator-ambient__reflection {
+  z-index: 3;
+  top: 12%;
+  right: 8%;
+  width: clamp(12.5rem, 24vw, 25rem);
+  height: 6rem;
+  opacity: 0;
+  background: radial-gradient(ellipse, rgba(232, 193, 119, 0.04) 0%, rgba(193, 146, 69, 0.015) 40%, transparent 72%);
+  transform: rotate(-14deg) translate3d(4rem, 0, 0);
+  animation: curator-reflection 34s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.curator-ambient__drawing {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.curator-ambient__drawing :is(path, circle, line) {
+  vector-effect: non-scaling-stroke;
+}
+
+.curator-ambient__construction {
+  fill: none;
+  stroke: rgba(39, 51, 43, 0.12);
+  stroke-width: 0.7;
+}
+
+.curator-ambient__construction circle,
+.curator-ambient__construction path:nth-child(4) {
+  stroke: rgba(193, 146, 69, 0.042);
+}
+
+.curator-ambient__slow-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: curator-draw-line 38s cubic-bezier(0.4, 0, 0.2, 1) 3s forwards;
+}
+
+.curator-ambient__body-line {
+  fill: none;
+  stroke: rgba(193, 146, 69, 0.075);
+  stroke-width: 0.75;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: curator-draw-line 10s cubic-bezier(0.16, 1, 0.3, 1) 700ms forwards;
+}
+
+.curator-ambient__track {
+  fill: none;
+  stroke: rgba(193, 146, 69, 0.045);
+  stroke-width: 0.65;
+}
+
+.curator-ambient__particle {
+  fill: rgba(232, 193, 119, 0.72);
+  stroke: none;
+  opacity: 0.58;
+}
+
+.curator-ambient__instrument {
+  fill: none;
+  stroke: rgba(193, 146, 69, 0.043);
+  stroke-width: 0.65;
+}
+
+.curator-ambient__instrument line {
+  stroke: rgba(235, 231, 219, 0.048);
+}
+
+.curator-ambient__instrument .curator-ambient__tick--active {
+  stroke: rgba(232, 193, 119, 0.13);
+  animation: curator-tick-pulse 31s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.curator-ambient__nodes {
+  fill: rgba(232, 193, 119, 0.2);
+  stroke: rgba(193, 146, 69, 0.052);
+  stroke-width: 0.55;
+}
+
+.curator-ambient__nodes path {
+  fill: none;
+}
+
+.curator-ambient__node--pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: curator-node-pulse 38s cubic-bezier(0.4, 0, 0.2, 1) 18s infinite;
+}
+
+.curator-ambient__precision {
+  fill: none;
+  stroke: rgba(235, 231, 219, 0.045);
+  stroke-width: 0.6;
+}
+
+.curator-ambient__quiet-zone {
+  z-index: 2;
+  inset: 4rem 6vw auto;
+  height: min(68vh, 45rem);
+  background: radial-gradient(ellipse at 50% 32%, rgba(19, 19, 19, 0.95) 0%, rgba(19, 19, 19, 0.82) 34%, rgba(19, 19, 19, 0.28) 63%, transparent 78%);
+}
+
+.curator-ambient__card-glow {
+  z-index: 3;
+  top: 19rem;
+  width: min(30vw, 27rem);
+  height: 18rem;
+  opacity: 0;
+  background: radial-gradient(ellipse, rgba(193, 146, 69, 0.04) 0%, rgba(39, 51, 43, 0.035) 42%, transparent 72%);
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.curator-ambient__card-glow--studio {
+  left: 17%;
+}
+
+.curator-ambient__card-glow--guest {
+  right: 17%;
+}
+
+.admin-page:has([data-curator-card="studio"]:is(:hover, :focus-visible)) .curator-ambient__card-glow--studio,
+.admin-page:has([data-curator-card="guest"]:is(:hover, :focus-visible)) .curator-ambient__card-glow--guest {
+  opacity: 1;
+}
+
+.curator-ambient__grain {
+  z-index: 4;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    radial-gradient(circle at 21% 32%, rgba(235, 231, 219, 0.08) 0 0.4px, transparent 0.65px),
+    radial-gradient(circle at 72% 68%, rgba(193, 146, 69, 0.06) 0 0.35px, transparent 0.6px);
+  background-size: 5px 7px, 7px 5px;
+  mix-blend-mode: soft-light;
+}
+
+.curator-ambient__vignette {
+  z-index: 5;
+  inset: -1px;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(14, 14, 14, 0.28) 100%);
+}
+
+@keyframes curator-green-drift {
+  from { transform: translate3d(-2%, 2%, 0) scale(0.98); }
+  to { transform: translate3d(5%, -4%, 0) scale(1.04); }
+}
+
+@keyframes curator-amber-drift {
+  from { transform: translate3d(1%, -2%, 0) scale(1); }
+  to { transform: translate3d(-5%, 5%, 0) scale(1.05); }
+}
+
+@keyframes curator-draw-line {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes curator-reflection {
+  0%, 68%, 100% { opacity: 0; transform: rotate(-14deg) translate3d(4rem, 0, 0); }
+  76% { opacity: 0.72; }
+  86% { opacity: 0; transform: rotate(-14deg) translate3d(-5rem, 2rem, 0); }
+}
+
+@keyframes curator-tick-pulse {
+  0%, 44%, 54%, 100% { opacity: 0.28; }
+  49% { opacity: 1; }
+}
+
+@keyframes curator-node-pulse {
+  0%, 8%, 100% { opacity: 0.35; transform: scale(1); }
+  4% { opacity: 0.9; transform: scale(1.5); }
+}
+
+@media (max-width: 640px) {
+  .curator-ambient__light--green {
+    width: 44rem;
+    left: -27rem;
+    bottom: -30rem;
+  }
+
+  .curator-ambient__light--amber {
+    width: 35rem;
+    right: -25rem;
+    top: -20rem;
+  }
+
+  .curator-ambient__cursor-light,
+  .curator-ambient__reflection,
+  .curator-ambient__instrument,
+  .curator-ambient__track,
+  .curator-ambient__precision,
+  .curator-ambient__secondary-line,
+  .curator-ambient__node--desktop,
+  .curator-ambient__node-link--desktop,
+  .curator-ambient__card-glow {
+    display: none;
+  }
+
+  .curator-ambient__construction {
+    opacity: 0.58;
+  }
+
+  .curator-ambient__body-line {
+    stroke: rgba(193, 146, 69, 0.055);
+  }
+
+  .curator-ambient__quiet-zone {
+    inset: 3.75rem -12rem auto;
+    height: 78vh;
+  }
+
+  .curator-ambient__grain {
+    opacity: 0.08;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curator-ambient :is(.curator-ambient__light, .curator-ambient__reflection, .curator-ambient__slow-draw, .curator-ambient__body-line, .curator-ambient__tick--active, .curator-ambient__node--pulse) {
+    animation: none !important;
+  }
+
+  .curator-ambient__slow-draw,
+  .curator-ambient__body-line {
+    stroke-dashoffset: 0;
+  }
+
+  .curator-ambient__particle,
+  .curator-ambient__cursor-light,
+  .curator-ambient__reflection {
+    display: none;
+  }
+}

@@ -7,6 +7,7 @@ import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { curatedMetadataForModel } from '../data/collectionVehicles';
 import { normalizeImageFile } from '../utils/imageUtils';
 import DiaryAdminPanel from './DiaryAdminPanel';
+import CuratorAmbientBackground from './CuratorAmbientBackground';
 
 const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: 'draft', label: 'Rascunho' },
@@ -599,11 +600,12 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
   return (
       <div className="admin-page min-h-screen bg-background text-on-background">
+        {isAuthenticated && <CuratorAmbientBackground />}
         <motion.div
           initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="min-h-screen"
+          className="relative z-10 min-h-screen"
         >
           {/* Top Header */}
           <header className="sticky top-0 z-40 px-5 md:px-10 py-4 bg-background/95 border-b border-surface-variant/40 flex items-center justify-between">
@@ -776,6 +778,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <button
                         type="button"
+                        data-curator-card="studio"
                         onClick={() => {
                           playMechanicalClick('click');
                           setRegistrationKind('studio');
@@ -790,6 +793,7 @@ export default function AdminModal({ isOpen, onClose, onVehicleAdded }: AdminMod
 
                       <button
                         type="button"
+                        data-curator-card="guest"
                         onClick={() => {
                           playMechanicalClick('click');
                           setRegistrationKind('guest');
