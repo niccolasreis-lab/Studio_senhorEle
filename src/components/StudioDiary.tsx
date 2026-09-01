@@ -192,11 +192,16 @@ function DiaryMedia({ update, aspect, playLabel, isPreviewActive, onHoverStart, 
           type="button"
           onClick={() => setPlaying(true)}
           className={`absolute inset-0 z-10 grid cursor-pointer place-items-center transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary ${
-            isPreviewActive ? 'bg-background/10 hover:bg-background/25' : 'bg-background/30 hover:bg-background/40'
+            isPreviewActive ? 'bg-transparent hover:bg-transparent' : 'bg-background/30 hover:bg-background/40'
           }`}
           aria-label={`${playLabel}: ${update.title}`}
         >
-          <div className="flex flex-col items-center gap-3">
+          <div
+            aria-hidden="true"
+            className={`flex flex-col items-center gap-3 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${
+              isPreviewActive ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+            }`}
+          >
             <span className="grid h-20 w-20 place-items-center rounded-full bg-secondary text-background shadow-[0_0_35px_rgba(230,175,46,0.5)] transition-all duration-300 group-hover:scale-110 group-hover:bg-amber-glow motion-reduce:transform-none">
               <Play className="ml-1.5 h-8 w-8" fill="currentColor" aria-hidden="true" />
             </span>

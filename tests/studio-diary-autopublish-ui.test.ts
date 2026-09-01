@@ -49,6 +49,8 @@ describe('automatic Studio Diary workflow', () => {
     expect(publicDiary).toContain("matchMedia('(hover: hover) and (pointer: fine)')");
     expect(publicDiary).toContain('autoplay=1&mute=1&controls=0&loop=1');
     expect(publicDiary.match(/isPreviewActive \? 'opacity-0 pointer-events-none'/g)).toHaveLength(1);
+    expect(publicDiary).toContain("isPreviewActive ? 'bg-transparent hover:bg-transparent'");
+    expect(publicDiary).toContain("isPreviewActive ? 'opacity-0 scale-95' : 'opacity-100 scale-100'");
     expect(publicDiary).not.toContain('pointer-events-none scale-[1.05]');
   });
 
