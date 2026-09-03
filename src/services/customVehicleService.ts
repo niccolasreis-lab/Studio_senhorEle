@@ -386,7 +386,11 @@ export const CustomVehicleService = {
    * confiáveis da knowledge base. Cor, condição e proveniência real NUNCA são
    * inventados: ficam fora do retorno, fazendo a interface ocultar o campo.
    */
-  generateSmartVehicleSpecs(brand: string, model: string, year: string): Omit<CustomVehicle, 'id' | 'isCustom'> {
+  generateSmartVehicleSpecs(
+    brand: string,
+    model: string,
+    year: string,
+  ): Omit<CustomVehicle, 'id' | 'isCustom'> & { hasIndividualData: boolean; history: string[] } {
     const cleanBrand = brand.trim();
     const cleanModel = model.trim();
     const cleanYear = year.trim() || '';
@@ -410,6 +414,7 @@ export const CustomVehicleService = {
       curiosities: spec.curiosities,
       presentationText: spec.presentation,
       variationsNote: spec.variationsNote,
+      hasIndividualData: spec.hasIndividualData,
     };
   },
 };

@@ -9,7 +9,7 @@ export default function DevSignature() {
   return (
     <div className="border-t border-white/10">
       <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-5">
-        <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 text-xs text-[#6b7280]">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 text-xs text-[#a3a3a3]">
           <div className="flex items-center gap-2">
             <img
               src={NEXA_LOGO}
@@ -32,7 +32,7 @@ export default function DevSignature() {
             href={NEXA_WEBSITE_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-cyan-500"
+            className="inline-flex min-h-6 items-center gap-1.5 transition-colors hover:text-cyan-400"
           >
             <Globe className="h-3.5 w-3.5" />
             <span>nexareis.com.br</span>
@@ -44,7 +44,7 @@ export default function DevSignature() {
             href={NEXA_INSTAGRAM_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-cyan-500"
+            className="inline-flex min-h-6 items-center gap-1.5 transition-colors hover:text-cyan-400"
           >
             <Instagram className="h-3.5 w-3.5" />
             <span>@nexareisautomacao</span>
@@ -56,7 +56,7 @@ export default function DevSignature() {
             href={NEXA_WHATSAPP_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-green-500"
+            className="inline-flex min-h-6 items-center gap-1.5 transition-colors hover:text-green-400"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             <span>+55 11 93710-5501</span>

@@ -111,7 +111,7 @@ export function PartnersShowcase({
                       <img
                         src={partner.logo}
                         alt={partner.imageAlt ?? `Logotipo de ${partner.name}`}
-                        loading={index < 5 ? 'eager' : 'lazy'}
+                        loading="lazy"
                         decoding="async"
                         draggable="false"
                         width="320"

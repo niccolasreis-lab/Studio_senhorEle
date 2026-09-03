@@ -1,5 +1,3 @@
-import heic2any from 'heic2any';
-
 export type NormalizedImageFile = {
   file: File;
   preview: string;
@@ -33,6 +31,9 @@ const fileFromBlob = (blob: Blob, originalName: string): File => {
 
 export const normalizeImageFile = async (file: File): Promise<NormalizedImageFile> => {
   if (isHeicFile(file)) {
+    // HEIC conversion is admin-only and expensive. Load it only when an uploaded
+    // file actually needs conversion so it never enters the public initial chunk.
+    const { default: heic2any } = await import('heic2any');
     const converted = (await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })) as Blob | Blob[];
     const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
     const jpegFile = fileFromBlob(jpegBlob, file.name);

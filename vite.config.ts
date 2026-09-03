@@ -44,6 +44,7 @@ export default defineConfig(() => {
         workbox: {
           navigateFallback: '/index.html',
           cleanupOutdatedCaches: true,
+          globIgnores: ['**/heic2any-*.js'],
         },
       }),
     ],

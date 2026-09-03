@@ -430,7 +430,8 @@ const handler: Handler = async (req, res) => {
     console.error('[og] unhandled error', err);
     res.statusCode = 500;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end(`OG_ERROR: ${err?.message || err}\n${err?.stack || ''}`);
+    console.error('OG generation failed', err);
+    res.end('Não foi possível gerar a prévia desta página.');
   }
 };
 

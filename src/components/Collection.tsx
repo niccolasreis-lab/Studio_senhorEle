@@ -212,7 +212,7 @@ const IntersectionObserverGridCard = memo(function IntersectionObserverGridCard(
           <button
             type="button"
             onClick={handleWhatsAppShare}
-            className="bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/40 hover:border-[#25D366] font-label-caps text-xs px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center space-x-1.5 font-bold shadow-sm"
+            className="bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-deep-charcoal border border-[#25D366]/40 hover:border-[#25D366] font-label-caps text-xs px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center space-x-1.5 font-bold shadow-sm"
           >
             <span>Compartilhar no WhatsApp</span>
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -271,7 +271,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
   const [customVehicles, setCustomVehicles] = useState<CollectionVehicleItem[]>(() =>
     CustomVehicleService.getCustomVehicles()
       .filter((v) => v.status === 'published' || v.status === 'reserved')
-      .map((v) => ({
+      .map((v): CollectionVehicleItem => ({
       id: v.id,
       shareId: v.shareId,
       title: v.title,
@@ -289,7 +289,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
   const refreshCustomVehicles = () => {
     const fresh = CustomVehicleService.getCustomVehicles()
       .filter((v) => v.status === 'published' || v.status === 'reserved')
-      .map((v) => ({
+      .map((v): CollectionVehicleItem => ({
       id: v.id,
       shareId: v.shareId,
       title: v.title,
@@ -430,6 +430,7 @@ const Collection = memo(function Collection({ onSelectCarForInquiry, onOpenDetai
             </span>
             <input
               type="text"
+              aria-label={t.collection.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t.collection.searchPlaceholder}

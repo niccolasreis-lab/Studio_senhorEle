@@ -72,7 +72,7 @@ export default function Footer({ onOpenInquire, isFilmGrainEnabled = true, onTog
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => playMechanicalClick('click')}
-                className="inline-flex items-center space-x-2 bg-[#25D366] text-white font-label-caps text-label-caps px-5 py-2.5 rounded-lg hover:bg-[#20bd5a] transition-colors"
+                className="inline-flex items-center space-x-2 bg-[#25D366] text-deep-charcoal font-label-caps text-label-caps px-5 py-2.5 rounded-lg hover:bg-[#20bd5a] transition-colors"
                 href={buildWhatsAppLink('')}
                 target="_blank"
                 rel="noopener noreferrer"

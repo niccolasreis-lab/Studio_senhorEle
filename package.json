@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "studio-senhorele-website",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,7 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "node scripts/clean-dist.mjs && vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
+    "clean": "node scripts/clean-dist.mjs",
     "lint": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -25,6 +25,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.6",
     "tailwindcss": "^4.1.14",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",

@@ -1,10 +1,39 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { playMechanicalClick } from '../utils/audio';
 
 export default function Hero() {
   const { t } = useLanguage();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (prefersReducedMotion) {
+      video.pause();
+      setIsVideoPlaying(false);
+      return;
+    }
+
+    void video.play().then(() => setIsVideoPlaying(true)).catch(() => setIsVideoPlaying(false));
+  }, [prefersReducedMotion]);
+
+  const toggleVideoPlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    playMechanicalClick('click');
+    if (video.paused) {
+      void video.play().then(() => setIsVideoPlaying(true)).catch(() => setIsVideoPlaying(false));
+    } else {
+      video.pause();
+      setIsVideoPlaying(false);
+    }
+  };
 
   const handleExploreClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -28,16 +57,31 @@ export default function Hero() {
       {/* Background Video with Dark Overlay */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <video
-          autoPlay
+          ref={videoRef}
+          aria-hidden="true"
           loop
           muted
           playsInline
+          preload="metadata"
+          onPlay={() => setIsVideoPlaying(true)}
+          onPause={() => setIsVideoPlaying(false)}
           className="w-full h-full object-cover scale-105"
         >
           <source src="/assets/videos/hero-video.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60"></div>
+        <button
+          type="button"
+          onClick={toggleVideoPlayback}
+          className="absolute bottom-5 left-5 z-20 inline-flex min-h-11 items-center gap-2 rounded-full border border-secondary/45 bg-background/80 px-4 font-label-caps text-xs uppercase tracking-[0.12em] text-parchment shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:border-secondary hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:transition-none md:bottom-8 md:left-8"
+          aria-label={isVideoPlaying ? t.hero.pauseVideo : t.hero.playVideo}
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+            {isVideoPlaying ? 'pause' : 'play_arrow'}
+          </span>
+          <span>{isVideoPlaying ? t.hero.pauseVideo : t.hero.playVideo}</span>
+        </button>
       </div>
       
       {/* Top Spacer for Nav balance */}
@@ -50,6 +94,7 @@ export default function Hero() {
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 flex flex-col items-center text-center px-margin-mobile max-w-4xl lg:max-w-5xl mx-auto my-auto py-8"
       >
+        <h1 className="sr-only">Studio SenhorEle</h1>
         {/* Logotipo em Destaque com Fade Luxuoso */}
         <motion.div
           initial={{ opacity: 0, scale: 0.88, y: 20 }}
@@ -61,11 +106,22 @@ export default function Hero() {
           <div className="absolute -inset-4 bg-amber-glow/20 rounded-full blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none" />
 
           {/* Logo Image em Alta Resolução */}
-          <img
-            src="/assets/images/logo-senhorele-hero.png"
-            alt="Studio SenhorEle - Coleção Air Cooled"
-            className="relative w-72 sm:w-96 md:w-[440px] lg:w-[500px] max-w-full h-auto object-contain drop-shadow-[0_12px_35px_rgba(0,0,0,0.85)] filter transition-transform duration-500 hover:scale-[1.02]"
-          />
+          <picture className="relative block w-72 max-w-full sm:w-96 md:w-[440px] lg:w-[500px]">
+            <source
+              type="image/webp"
+              srcSet="/assets/images/logo-senhorele-hero-320.webp 320w, /assets/images/logo-senhorele-hero-640.webp 640w, /assets/images/logo-senhorele-hero-1024.webp 1024w"
+              sizes="(max-width: 639px) 288px, (max-width: 767px) 384px, (max-width: 1023px) 440px, 500px"
+            />
+            <img
+              src="/assets/images/logo-senhorele-hero.png"
+              alt="Studio SenhorEle - Coleção Air Cooled"
+              width="1024"
+              height="1024"
+              fetchPriority="high"
+              decoding="async"
+              className="h-auto w-full object-contain drop-shadow-[0_12px_35px_rgba(0,0,0,0.85)] filter transition-transform duration-500 hover:scale-[1.02] motion-reduce:transition-none"
+            />
+          </picture>
         </motion.div>
 
         <div className="mt-6 max-w-2xl" />

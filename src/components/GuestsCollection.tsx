@@ -143,7 +143,7 @@ const GuestsCollection = memo(function GuestsCollection({ items, onOpenDetail }:
                     onClick={() => shareGuestOnWhatsApp(item)}
                     aria-label={`${t.guests.whatsappLabel}: ${item.title}`}
                     title={t.guests.whatsappLabel}
-                    className="flex size-11 items-center justify-center rounded-lg border border-[#25D366]/45 text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-white focus-visible:outline-2 focus-visible:outline-[#25D366]"
+                    className="flex size-11 items-center justify-center rounded-lg border border-[#25D366]/45 text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-deep-charcoal focus-visible:outline-2 focus-visible:outline-[#25D366]"
                   >
                     <span className="material-symbols-outlined text-[19px]" aria-hidden="true">send</span>
                   </button>

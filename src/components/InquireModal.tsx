@@ -223,7 +223,7 @@ export default function InquireModal({
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.15 }}
                 type="submit"
-                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-label-caps text-label-caps px-5 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-md"
+                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-deep-charcoal font-label-caps text-label-caps px-5 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-md"
               >
                 <span className="material-symbols-outlined text-[20px]">chat</span>
                 <span>{t.inquire.whatsappDirect}</span>

@@ -729,7 +729,7 @@ export default function VehicleDetailModal({
                     whileTap={{ scale: 0.97 }}
                     transition={{ duration: 0.15 }}
                     onClick={handleWhatsAppShare}
-                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#25D366]/55 px-6 text-sm font-bold font-label-caps text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-white sm:w-auto"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#25D366]/55 px-6 text-sm font-bold font-label-caps text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-deep-charcoal sm:w-auto"
                   >
                     <span className="material-symbols-outlined text-[19px]" aria-hidden="true">send</span>
                     <span>Compartilhar no WhatsApp</span>
@@ -747,7 +747,7 @@ export default function VehicleDetailModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => playMechanicalClick('click')}
-                className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-label-caps text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md font-bold"
+                className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-deep-charcoal font-label-caps text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md font-bold"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.157 4.228 4.228-1.157zm11.233-6.082c-.083-.139-.304-.222-.637-.388-.333-.167-1.968-.972-2.274-1.083-.306-.112-.529-.167-.751.167-.222.333-.861 1.083-1.056 1.306-.194.222-.389.25-.722.083-.333-.167-1.408-.519-2.682-1.655-1.002-.892-1.678-1.995-1.874-2.328-.195-.333-.021-.513.145-.678.15-.149.333-.389.5-.583.167-.194.222-.333.333-.556.111-.222.056-.417-.028-.583-.083-.167-.751-1.806-1.028-2.472-.27-.648-.545-.561-.75-.572-.198-.011-.426-.011-.654-.011-.228 0-.598.086-.911.428-.313.342-1.196 1.169-1.196 2.85 0 1.681 1.225 3.303 1.396 3.533.171.23 2.413 3.685 5.845 5.166.816.352 1.453.562 1.949.72.82.261 1.567.224 2.157.136.657-.098 2.018-.825 2.302-1.625.284-.801.284-1.487.199-1.626z"/>

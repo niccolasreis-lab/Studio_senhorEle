@@ -13,6 +13,8 @@ export interface Translations {
   };
   hero: {
     explore: string;
+    pauseVideo: string;
+    playVideo: string;
   };
   about: {
     tagline: string;
@@ -210,6 +212,8 @@ export const translations: Record<Language, Translations> = {
     },
     hero: {
       explore: 'EXPLORAR',
+      pauseVideo: 'Pausar vídeo',
+      playVideo: 'Reproduzir vídeo',
     },
     about: {
       tagline: 'CURADORIA & PAIXÃO AUTOMOTIVA',
@@ -404,6 +408,8 @@ export const translations: Record<Language, Translations> = {
     },
     hero: {
       explore: 'EXPLORE',
+      pauseVideo: 'Pause video',
+      playVideo: 'Play video',
     },
     about: {
       tagline: 'AUTOMOTIVE CURATION & PASSION',
@@ -598,6 +604,8 @@ export const translations: Record<Language, Translations> = {
     },
     hero: {
       explore: 'ENTDECKEN',
+      pauseVideo: 'Video pausieren',
+      playVideo: 'Video abspielen',
     },
     about: {
       tagline: 'AUTOMOBILE KURATIERUNG & LEIDENSCHAFT',
