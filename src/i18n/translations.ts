@@ -103,6 +103,10 @@ export interface Translations {
   diary: {
     title: string;
     description: string;
+    upcomingEvents: string;
+    noUpcomingEvents: string;
+    eventsLoading: string;
+    eventsError: string;
     recommendation: string;
     manual: string;
     loading: string;
@@ -301,6 +305,10 @@ export const translations: Record<Language, Translations> = {
     diary: {
       title: 'Diário do Studio',
       description: 'Novidades, encontros e histórias do Studio SenhorEle, além de indicações escolhidas de parceiros do universo automotivo.',
+      upcomingEvents: 'Próximos eventos',
+      noUpcomingEvents: 'Ainda não há eventos na agenda.',
+      eventsLoading: 'Carregando a agenda…',
+      eventsError: 'Não foi possível carregar a agenda.',
       recommendation: 'Indicação',
       manual: 'Studio SenhorEle',
       loading: 'Carregando novidades…',
@@ -497,6 +505,10 @@ export const translations: Record<Language, Translations> = {
     diary: {
       title: 'Studio Diary',
       description: 'News, gatherings and stories from Studio SenhorEle, together with selected recommendations from automotive partners.',
+      upcomingEvents: 'Upcoming events',
+      noUpcomingEvents: 'No events are scheduled yet.',
+      eventsLoading: 'Loading events…',
+      eventsError: 'The event calendar could not be loaded.',
       recommendation: 'Recommendation',
       manual: 'Studio SenhorEle',
       loading: 'Loading updates…',
@@ -693,6 +705,10 @@ export const translations: Record<Language, Translations> = {
     diary: {
       title: 'Studio-Tagebuch',
       description: 'Neuigkeiten, Treffen und Geschichten des Studio SenhorEle sowie ausgewählte Empfehlungen von Partnern aus der Automobilwelt.',
+      upcomingEvents: 'Kommende Veranstaltungen',
+      noUpcomingEvents: 'Zurzeit sind keine Veranstaltungen geplant.',
+      eventsLoading: 'Veranstaltungen werden geladen…',
+      eventsError: 'Der Veranstaltungskalender konnte nicht geladen werden.',
       recommendation: 'Empfehlung',
       manual: 'Studio SenhorEle',
       loading: 'Neuigkeiten werden geladen…',

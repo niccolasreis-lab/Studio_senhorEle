@@ -1,5 +1,5 @@
 import React, { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, ExternalLink, LoaderCircle, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { CalendarPlus, Check, ChevronLeft, ChevronRight, ExternalLink, LoaderCircle, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { SocialSource, StudioUpdate, StudioUpdateCounts, StudioUpdateService, UpdateContentType } from '../services/studioUpdateService';
 import { dateTimeLocalToIso, toDateTimeLocalInput } from '../utils/dateTimeLocal';
 
@@ -9,8 +9,8 @@ type EditableUpdate = StudioUpdate & { displayAspect?: DisplayAspect };
 const PAGE_SIZE = 12;
 const EMPTY_COUNTS: StudioUpdateCounts = { featured: 0, archived: 0, hidden: 0 };
 const EMPTY_FORM = {
-  title: '', summary: '', authorName: 'Studio SenhorEle', contentType: 'event' as UpdateContentType,
-  publishedAt: toDateTimeLocalInput(), thumbnailUrl: '', canonicalUrl: '',
+  title: '', summary: '', authorName: 'Studio SenhorEle', contentType: 'note' as UpdateContentType,
+  publishedAt: '', thumbnailUrl: '', canonicalUrl: '',
   eventStartsAt: '', eventEndsAt: '', location: '', ctaLabel: '', ctaUrl: '', displayAspect: 'landscape' as DisplayAspect,
 };
 
@@ -59,10 +59,18 @@ export default function DiaryAdminPanel() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const resetForm = (close = true) => {
+  const resetForm = () => {
     setEditing(null);
-    setForm({ ...EMPTY_FORM, publishedAt: toDateTimeLocalInput() });
-    if (close) setEditorOpen(false);
+    setEditorOpen(false);
+  };
+
+  const startNew = (contentType: 'event' | 'note') => {
+    setEditing(null);
+    setNotice('');
+    setError('');
+    setForm({ ...EMPTY_FORM, contentType, publishedAt: toDateTimeLocalInput() });
+    setEditorOpen(true);
+    window.requestAnimationFrame(() => editorTitleRef.current?.focus());
   };
 
   const startEdit = (item: EditableUpdate) => {
@@ -85,19 +93,24 @@ export default function DiaryAdminPanel() {
     else setPage(1);
   };
 
+  const isEvent = form.contentType === 'event';
+  // Older manual entries could be saved as events without a date, or as notes with dates.
+  const hasLegacyDates = editing && editing.contentType !== 'event' && (editing.eventStartsAt || editing.eventEndsAt);
+  const showEventDates = isEvent || Boolean(hasLegacyDates && editing.contentType === form.contentType);
+  const startRequired = isEvent && (editing?.contentType !== 'event' || Boolean(editing.eventStartsAt || form.eventEndsAt));
+
   const save = async (event: FormEvent) => {
     event.preventDefault();
     setBusy('save'); setError(''); setNotice('');
-    const payload = {
-      ...form,
-      publishedAt: dateTimeLocalToIso(form.publishedAt),
-      eventStartsAt: form.eventStartsAt ? dateTimeLocalToIso(form.eventStartsAt) : undefined,
-      eventEndsAt: form.eventEndsAt ? dateTimeLocalToIso(form.eventEndsAt) : undefined,
-    };
     try {
+      const eventStartsAt = showEventDates && form.eventStartsAt ? dateTimeLocalToIso(form.eventStartsAt) : '';
+      const eventEndsAt = showEventDates && form.eventEndsAt ? dateTimeLocalToIso(form.eventEndsAt) : '';
+      if (startRequired && !eventStartsAt) throw new Error('Informe a data e a hora de início do evento.');
+      if (eventStartsAt && eventEndsAt && eventEndsAt < eventStartsAt) throw new Error('O término precisa ser igual ou posterior ao início do evento.');
+      const payload = { ...form, publishedAt: dateTimeLocalToIso(form.publishedAt), eventStartsAt, eventEndsAt };
       if (editing) await StudioUpdateService.update(editing.id, payload);
       else await StudioUpdateService.createManual(payload);
-      setNotice(editing ? 'Novidade atualizada.' : 'Novidade publicada no Diário.');
+      setNotice(editing ? 'Publicação atualizada.' : isEvent ? 'Evento publicado no Diário.' : 'Novidade publicada no Diário.');
       resetForm();
       await reloadFromFirstPage();
     } catch (cause) {
@@ -134,6 +147,11 @@ export default function DiaryAdminPanel() {
   };
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const locationField = (
+    <label className="text-sm text-parchment">Local (opcional)
+      <input maxLength={500} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={`${inputClass} mt-1.5`} />
+    </label>
+  );
 
   return (
     <section className="space-y-8" aria-labelledby="diary-admin-title">
@@ -181,17 +199,22 @@ export default function DiaryAdminPanel() {
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h3 id="manual-entry-title" className="font-headline-md text-xl text-parchment">Publicação manual</h3>
-            <p className="mt-1 text-sm text-on-surface-variant">Para eventos e notas que não vêm das redes sociais.</p>
+            <p className="mt-1 text-sm text-on-surface-variant">Publique uma novidade ou adicione um encontro à agenda do Studio.</p>
           </div>
-          <button type="button" aria-expanded={editorOpen} aria-controls="diary-editor" onClick={() => { if (editorOpen) resetForm(); else { setEditorOpen(true); window.requestAnimationFrame(() => editorTitleRef.current?.focus()); } }} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-surface-container-high px-4 text-xs font-bold text-parchment hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary">
-            {editorOpen ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}{editorOpen ? 'Fechar formulário' : 'Nova publicação manual'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" aria-expanded={editorOpen} aria-controls="diary-editor" onClick={() => editorOpen ? resetForm() : startNew('note')} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-surface-container-high px-4 text-xs font-bold text-parchment hover:bg-surface-container-highest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary">
+              {editorOpen ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}{editorOpen ? 'Fechar formulário' : 'Nova publicação manual'}
+            </button>
+            {!editorOpen && <button type="button" aria-expanded={false} aria-controls="diary-editor" onClick={() => startNew('event')} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-secondary/50 px-4 text-sm font-bold text-secondary hover:bg-secondary/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary">
+              <CalendarPlus size={17} aria-hidden="true" />Novo evento
+            </button>}
+          </div>
         </div>
 
         {editorOpen && (
           <form id="diary-editor" onSubmit={save} className="mt-5 scroll-mt-40 space-y-5 rounded-2xl bg-surface-container-low p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
-              <h4 ref={editorTitleRef} tabIndex={-1} className="font-headline-md text-xl text-parchment outline-none">{editing ? 'Editar novidade' : 'Nova publicação manual'}</h4>
+              <h4 ref={editorTitleRef} tabIndex={-1} className="font-headline-md text-xl text-parchment outline-none">{editing ? 'Editar publicação' : isEvent ? 'Novo evento' : 'Nova publicação manual'}</h4>
               {editing && <button type="button" onClick={() => resetForm()} className="min-h-11 rounded-xl px-3 text-xs text-on-surface-variant hover:text-parchment">Cancelar edição</button>}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -199,17 +222,32 @@ export default function DiaryAdminPanel() {
               <label className="text-xs font-label-caps text-on-surface-variant">Autor *<input required maxLength={180} value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
               <label className="text-xs font-label-caps text-on-surface-variant">Tipo<select value={form.contentType} onChange={(e) => setForm({ ...form, contentType: e.target.value as UpdateContentType })} className={`${inputClass} mt-1.5`}><option value="event">Evento</option><option value="note">Nota</option><option value="video">Vídeo</option><option value="reel">Reel / Short</option><option value="image">Imagem</option><option value="carousel">Carrossel</option></select></label>
               <label className="text-xs font-label-caps text-on-surface-variant">Formato da mídia<select value={form.displayAspect} onChange={(e) => setForm({ ...form, displayAspect: e.target.value as DisplayAspect })} className={`${inputClass} mt-1.5`}><option value="landscape">Horizontal 16:9</option><option value="portrait">Vertical 9:16</option><option value="square">Quadrado 1:1</option></select></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Data da publicação *<input required type="datetime-local" value={form.publishedAt} onChange={(e) => setForm({ ...form, publishedAt: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
+            </div>
+            {showEventDates && (
+              <fieldset className="min-w-0 rounded-xl border border-secondary/35 px-4 pb-4">
+                <legend className="px-2 font-headline-md text-lg text-parchment">Data do evento</legend>
+                <p className="mt-1 text-sm text-on-surface-variant">Horários no fuso deste dispositivo ({Intl.DateTimeFormat().resolvedOptions().timeZone}). Sem horário de término, o evento sai da agenda quando começa.</p>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <label className="min-w-0 text-sm text-parchment">Início do evento{startRequired && ' *'}
+                    <input type="datetime-local" required={startRequired} value={form.eventStartsAt} onInput={(e) => setForm({ ...form, eventStartsAt: e.currentTarget.value })} className={`${inputClass} mt-1.5`} />
+                  </label>
+                  <label className="min-w-0 text-sm text-parchment">Término do evento (opcional)
+                    <input type="datetime-local" min={form.eventStartsAt || undefined} value={form.eventEndsAt} onInput={(e) => setForm({ ...form, eventEndsAt: e.currentTarget.value })} className={`${inputClass} mt-1.5`} />
+                  </label>
+                  {locationField}
+                </div>
+              </fieldset>
+            )}
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-xs font-label-caps text-on-surface-variant">Data da publicação *<input required type="datetime-local" value={form.publishedAt} onInput={(e) => setForm({ ...form, publishedAt: e.currentTarget.value })} className={`${inputClass} mt-1.5`} /></label>
               <label className="text-xs font-label-caps text-on-surface-variant">Imagem de capa<input type="url" value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
               <label className="text-xs font-label-caps text-on-surface-variant">Link original<input type="url" value={form.canonicalUrl} onChange={(e) => setForm({ ...form, canonicalUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Local<input maxLength={500} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Início do evento<input type="datetime-local" value={form.eventStartsAt} onChange={(e) => setForm({ ...form, eventStartsAt: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Fim do evento<input type="datetime-local" value={form.eventEndsAt} onChange={(e) => setForm({ ...form, eventEndsAt: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
+              {!showEventDates && locationField}
               <label className="text-xs font-label-caps text-on-surface-variant">Texto do botão<input maxLength={120} value={form.ctaLabel} onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
               <label className="text-xs font-label-caps text-on-surface-variant">Destino do botão<input type="url" value={form.ctaUrl} onChange={(e) => setForm({ ...form, ctaUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
             </div>
             <label className="block text-xs font-label-caps text-on-surface-variant">Resumo<textarea maxLength={5000} rows={4} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} className={`${inputClass} mt-1.5 resize-y`} /></label>
-            <button type="submit" disabled={busy === 'save'} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-5 text-xs font-bold text-background disabled:opacity-50"><Check size={16} aria-hidden="true" />{busy === 'save' ? 'Salvando…' : editing ? 'Salvar alterações' : 'Publicar agora'}</button>
+            <button type="submit" disabled={busy === 'save'} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-5 text-xs font-bold text-background disabled:opacity-50"><Check size={16} aria-hidden="true" />{busy === 'save' ? 'Salvando…' : editing ? 'Salvar alterações' : isEvent ? 'Publicar evento' : 'Publicar agora'}</button>
           </form>
         )}
       </section>
