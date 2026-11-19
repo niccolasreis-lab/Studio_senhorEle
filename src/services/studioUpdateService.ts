@@ -157,6 +157,25 @@ const toRow = (update: Partial<StudioUpdate>) => ({
 });
 
 export const StudioUpdateService = {
+  async fetchUpcomingEventsPage(page = 1, pageSize = 6): Promise<StudioUpdatePage> {
+    const range = pageRange(page, pageSize);
+    const now = new Date().toISOString();
+    const { data, error, count } = await configuredClient()
+      .from('studio_updates')
+      .select('*', { count: 'exact' })
+      .eq('editorial_status', 'published')
+      .eq('platform', 'manual')
+      .eq('content_type', 'event')
+      .not('event_starts_at', 'is', null)
+      .or(`event_starts_at.gte.${now},event_ends_at.gte.${now}`)
+      .order('event_starts_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(range.from, range.to);
+    // A page can disappear between requests when events end or are hidden.
+    if (error && !(range.page > 1 && error.code === 'PGRST103')) throw new Error(error.message);
+    return { items: (data || []).map(mapUpdate), total: count || 0, page: range.page, pageSize: range.pageSize };
+  },
+
   async fetchFeaturedPage(page = 1, pageSize = 6): Promise<StudioUpdatePage> {
     const client = configuredClient();
     const range = pageRange(page, pageSize);

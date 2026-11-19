@@ -5,6 +5,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { DisplayAspect, SocialSource, StudioUpdate, StudioUpdateService } from '../services/studioUpdateService';
 import { buildShareUrl } from '../utils/share';
 import PostMediaLayout from './PostMediaLayout';
+import UpcomingEvents, { EventDates } from './UpcomingEvents';
 
 const PAGE_SIZE = 6;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
@@ -239,7 +240,12 @@ export default function StudioDiary() {
   const [activeHoverPreviewId, setActiveHoverPreviewId] = useState<number | null>(null);
   const [detectedAspects, setDetectedAspects] = useState<Record<number, DisplayAspect>>({});
   const deepLinkedShareId = useMemo(() => new URLSearchParams(window.location.search).get('d'), []);
+  const scrolledShareId = useRef<string | null>(null);
   const locale = language === 'pt' ? 'pt-BR' : language === 'de' ? 'de-DE' : 'en-US';
+  const eventDateFormat = useMemo(() => new Intl.DateTimeFormat(locale, {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    timeZoneName: 'short', calendar: 'gregory',
+  }), [locale]);
 
   const handleHoverStart = useCallback((id: number) => {
     setActiveHoverPreviewId(id);
@@ -309,13 +315,19 @@ export default function StudioDiary() {
         setDeepLinkedUpdate(item);
         const isArchived = !item.featuredUntil || new Date(item.featuredUntil).getTime() < Date.now();
         if (isArchived) setArchiveOpen(true);
-        window.setTimeout(() => {
-          document.getElementById(`diary-${item.shareId}`)?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'center' });
-        }, 100);
       })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [deepLinkedShareId, shouldReduceMotion]);
+  }, [deepLinkedShareId]);
+
+  useEffect(() => {
+    if (!deepLinkedUpdate || scrolledShareId.current === deepLinkedUpdate.shareId) return;
+    const article = document.getElementById(`diary-${deepLinkedUpdate.shareId}`);
+    if (article) {
+      article.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'start' });
+      scrolledShareId.current = deepLinkedUpdate.shareId;
+    }
+  }, [deepLinkedUpdate, featuredLoading, archiveLoading, shouldReduceMotion]);
 
   const share = async (update: StudioUpdate) => {
     const url = buildShareUrl(update.shareId);
@@ -423,9 +435,7 @@ export default function StudioDiary() {
     const eventDetails = update.eventStartsAt ? (
       <div className="flex items-center gap-3 border-l-2 border-secondary/45 pl-4 text-sm text-parchment/90">
         <CalendarDays className="shrink-0 text-secondary" size={19} />
-        <time dateTime={update.eventStartsAt}>
-          {new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', calendar: 'gregory' }).format(new Date(update.eventStartsAt))}
-        </time>
+        <EventDates start={update.eventStartsAt} end={update.eventEndsAt} format={eventDateFormat} />
       </div>
     ) : null;
 
@@ -454,7 +464,7 @@ export default function StudioDiary() {
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-secondary/30 px-4 py-2.5 text-xs font-bold text-parchment transition-colors hover:bg-secondary hover:text-background focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
           >
             {update.platform === 'youtube' ? <Youtube size={15} aria-hidden="true" /> : update.platform === 'instagram' ? <Instagram size={15} aria-hidden="true" /> : <ExternalLink size={15} aria-hidden="true" />}
-            {update.platform === 'youtube' ? 'YouTube' : update.platform === 'instagram' ? 'Instagram' : t.diary.openOriginal}
+            {update.platform === 'youtube' ? 'YouTube' : update.platform === 'instagram' ? 'Instagram' : update.ctaLabel || t.diary.openOriginal}
           </a>
         )}
         {originalUrl && originalUrl !== channelUrl && (
@@ -487,7 +497,7 @@ export default function StudioDiary() {
         whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.2) }}
-        className="border-t border-surface-variant/35 py-10 lg:py-14 first:border-t-0 first:pt-4"
+        className="scroll-mt-24 border-t border-surface-variant/35 py-10 lg:py-14 first:border-t-0 first:pt-4"
       >
         {/* HEADER EDITORIAL (LARGURA TOTAL) */}
         <header className="mb-5">
@@ -572,6 +582,8 @@ export default function StudioDiary() {
           <h2 id="diary-title" className="text-balance font-headline-lg text-headline-lg-mobile text-parchment md:text-headline-lg">{t.diary.title}</h2>
           <p className="mt-5 font-body-lg text-base leading-relaxed text-on-surface-variant md:text-lg">{t.diary.description}</p>
         </header>
+
+        <UpcomingEvents dateFormat={eventDateFormat} />
 
         <div ref={featuredListRef} tabIndex={-1} className="mt-10 outline-none" aria-busy={featuredLoading} aria-live="polite">
           {featuredLoading && <p role="status" className="py-14 text-center text-on-surface-variant">{t.diary.loading}</p>}
