@@ -43,6 +43,7 @@ export default defineConfig(() => {
         },
         workbox: {
           navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/p\//, /^\/api\//],
           cleanupOutdatedCaches: true,
           globIgnores: ['**/heic2any-*.js'],
         },

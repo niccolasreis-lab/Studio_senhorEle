@@ -25,6 +25,9 @@ interface ShareItemResult {
   description: string;
   image: string;
   permalink?: string;
+  eventStartsAt?: string;
+  eventEndsAt?: string;
+  location?: string;
   subtitle?: string;
   year?: string;
   siteUrl: string;
@@ -225,7 +228,7 @@ async function findStudioUpdate(id: string, origin: string): Promise<ShareItemRe
     });
     const { data, error } = await client
       .from('studio_updates')
-      .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status')
+      .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status, event_starts_at, event_ends_at, location')
       .eq('editorial_status', 'published')
       .eq('share_id', shareIdCandidate)
       .maybeSingle();
@@ -234,7 +237,7 @@ async function findStudioUpdate(id: string, origin: string): Promise<ShareItemRe
     if (!row && /^\d+$/.test(id.trim())) {
       const fallback = await client
         .from('studio_updates')
-        .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status')
+        .select('id, share_id, title, summary, thumbnail_url, canonical_url, editorial_status, event_starts_at, event_ends_at, location')
         .eq('editorial_status', 'published')
         .eq('id', Number(id.trim()))
         .maybeSingle();
@@ -251,6 +254,9 @@ async function findStudioUpdate(id: string, origin: string): Promise<ShareItemRe
       description: row.summary || 'Novidade publicada no Diário do Studio SenhorEle.',
       image: row.thumbnail_url || DEFAULT_IMAGE,
       permalink: row.canonical_url || undefined,
+      eventStartsAt: row.event_starts_at || undefined,
+      eventEndsAt: row.event_ends_at || undefined,
+      location: row.location || undefined,
       siteUrl: `${origin}/?d=${encodeURIComponent(shareId)}#diario`,
       redirectUrl: `${origin}/p/${encodeURIComponent(shareId)}`,
     };
@@ -264,14 +270,14 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
   const sourceImage = absolutize(result.image || DEFAULT_IMAGE, origin);
   const image = result.kind === 'vehicle' || result.kind === 'guest' || result.kind === 'diary'
-    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=3`
+    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=4`
     : sourceImage;
   const imageAttribute = escapeHtml(image);
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
   const tag = result.kind === 'guest'
     ? 'Convidado do Studio'
     : result.kind === 'diary'
-      ? 'Diário do Studio'
+      ? (result.eventStartsAt ? 'Evento' : 'Diário do Studio')
       : 'Veículo';
 
   const contentHtml =
@@ -285,6 +291,21 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
     result.kind === 'diary' && result.permalink
       ? `<a class="btn btn-outline" href="${escapeHtml(result.permalink)}" rel="noopener">Ver publicação original</a>`
       : '';
+
+  const formatEventDate = (value: string) => escapeHtml(new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Sao_Paulo', calendar: 'gregory',
+  }).format(new Date(value)));
+  const eventHtml = result.kind === 'diary' ? [
+    result.eventStartsAt ? `<p><strong>Início:</strong> ${formatEventDate(result.eventStartsAt)} (Brasília)</p>` : '',
+    result.eventEndsAt ? `<p><strong>Término:</strong> ${formatEventDate(result.eventEndsAt)} (Brasília)</p>` : '',
+    result.location ? `<p><strong>Local:</strong> ${escapeHtml(result.location)}</p>` : '',
+  ].join('') : '';
+  // Crawlers read the server-rendered metadata; browsers open the exact Diary item.
+  // Escaping '<' keeps persisted data from terminating the script element.
+  const destination = JSON.stringify(result.siteUrl).replace(/</g, '\\u003c');
+  const directOpenScript = result.kind === 'diary'
+    ? `<script>window.location.replace(${destination});</script>`
+    : '';
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -371,17 +392,19 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
 </head>
 <body>
   <main class="card">
-    <img class="cover" src="${imageAttribute}" alt="${title}" />
+    <img class="cover" src="${escapeHtml(sourceImage)}" alt="${title}" />
     <div class="body">
       <span class="tag">${tag}${contentHtml}</span>
       <h1>${title}</h1>
       <p>${description}</p>
+      ${eventHtml}
       <div class="actions">
         <a class="btn btn-primary" href="${result.siteUrl}">Ver no site</a>
         ${linksHtml}
       </div>
     </div>
   </main>
+  ${directOpenScript}
 </body>
 </html>`;
 
@@ -440,7 +463,7 @@ async function handle(req: any, res: any) {
   const rawId = String(req.query?.id || '').trim();
   const key = normalizeShareKey(rawId);
 
-  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=3600');
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
 
   if (!key) {
     res.statusCode = 200;

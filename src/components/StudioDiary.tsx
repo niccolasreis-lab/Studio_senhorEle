@@ -3,7 +3,7 @@ import { CalendarDays, ChevronRight, ExternalLink, Instagram, Play, RefreshCw, S
 import { motion, useReducedMotion } from 'motion/react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { DisplayAspect, SocialSource, StudioUpdate, StudioUpdateService } from '../services/studioUpdateService';
-import { buildShareUrl } from '../utils/share';
+import { buildShareUrl, diaryShareIdFromLocation } from '../utils/share';
 import PostMediaLayout from './PostMediaLayout';
 import UpcomingEvents, { EventDates } from './UpcomingEvents';
 
@@ -239,7 +239,7 @@ export default function StudioDiary() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [activeHoverPreviewId, setActiveHoverPreviewId] = useState<number | null>(null);
   const [detectedAspects, setDetectedAspects] = useState<Record<number, DisplayAspect>>({});
-  const deepLinkedShareId = useMemo(() => new URLSearchParams(window.location.search).get('d'), []);
+  const deepLinkedShareId = useMemo(() => diaryShareIdFromLocation(window.location.search, window.location.pathname), []);
   const scrolledShareId = useRef<string | null>(null);
   const locale = language === 'pt' ? 'pt-BR' : language === 'de' ? 'de-DE' : 'en-US';
   const eventDateFormat = useMemo(() => new Intl.DateTimeFormat(locale, {

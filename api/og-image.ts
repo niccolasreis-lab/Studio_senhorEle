@@ -131,10 +131,10 @@ const overlaySvg = (title: string, tag: string) => {
   `);
 };
 
-const renderCard = async (res: any, sourceUrl: string | null, title: string, tag: string, origin: string): Promise<void> => {
+const renderCard = async (res: any, sourceUrl: string | null, title: string, tag: string, origin: string, preserveImage = false): Promise<void> => {
   const source = sourceUrl ? await fetchImage(sourceUrl, origin) : null;
   const base = source
-    ? sharp(source).rotate().resize(1200, 630, { fit: 'cover', position: 'centre' })
+    ? sharp(source).rotate().resize(1200, 630, { fit: preserveImage ? 'contain' : 'cover', position: 'centre', background: '#142019' })
     : sharp({ create: { width: 1200, height: 630, channels: 3, background: '#142019' } });
   const body = await base
     .composite([{ input: overlaySvg(title, tag), top: 0, left: 0 }])
@@ -192,7 +192,7 @@ const handler: Handler = async (req, res) => {
       res.end('Image not found');
       return;
     }
-    await renderCard(res, update.thumbnail_url ? absolutize(update.thumbnail_url, origin) : null, update.title || 'Diário do Studio', 'Diário do Studio', origin);
+    await renderCard(res, update.thumbnail_url ? absolutize(update.thumbnail_url, origin) : null, update.title || 'Diário do Studio', 'Diário do Studio', origin, true);
   } catch (error) {
     console.error('[og-image] failed', error);
     res.statusCode = 502;
