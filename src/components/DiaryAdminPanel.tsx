@@ -1,6 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarPlus, Check, ChevronLeft, ChevronRight, ExternalLink, LoaderCircle, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { CalendarPlus, Check, ChevronLeft, ChevronRight, ExternalLink, ImagePlus, LoaderCircle, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { SocialSource, StudioUpdate, StudioUpdateCounts, StudioUpdateService, UpdateContentType } from '../services/studioUpdateService';
+import { SupabaseService } from '../services/supabaseService';
 import { dateTimeLocalToIso, toDateTimeLocalInput } from '../utils/dateTimeLocal';
 
 type DisplayAspect = 'portrait' | 'landscape' | 'square';
@@ -32,6 +33,30 @@ export default function DiaryAdminPanel() {
   const [editing, setEditing] = useState<EditableUpdate | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState('');
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!coverFile) { setCoverPreview(''); return; }
+    const url = URL.createObjectURL(coverFile);
+    setCoverPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+
+  const selectCover = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Escolha uma imagem JPG, PNG ou WebP.'); return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 5 MB.'); return;
+    }
+    setError('');
+    setCoverFile(file);
+  };
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -60,11 +85,15 @@ export default function DiaryAdminPanel() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   const resetForm = () => {
+    if (busy === 'save') return;
     setEditing(null);
+    setCoverFile(null);
     setEditorOpen(false);
   };
 
   const startNew = (contentType: 'event' | 'note') => {
+    if (busy === 'save') return;
+    setCoverFile(null);
     setEditing(null);
     setNotice('');
     setError('');
@@ -74,6 +103,8 @@ export default function DiaryAdminPanel() {
   };
 
   const startEdit = (item: EditableUpdate) => {
+    if (busy === 'save') return;
+    setCoverFile(null);
     setEditing(item);
     setEditorOpen(true);
     setForm({
@@ -101,17 +132,28 @@ export default function DiaryAdminPanel() {
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
+    if (busy) return;
     setBusy('save'); setError(''); setNotice('');
     try {
       const eventStartsAt = showEventDates && form.eventStartsAt ? dateTimeLocalToIso(form.eventStartsAt) : '';
       const eventEndsAt = showEventDates && form.eventEndsAt ? dateTimeLocalToIso(form.eventEndsAt) : '';
       if (startRequired && !eventStartsAt) throw new Error('Informe a data e a hora de início do evento.');
       if (eventStartsAt && eventEndsAt && eventEndsAt < eventStartsAt) throw new Error('O término precisa ser igual ou posterior ao início do evento.');
-      const payload = { ...form, publishedAt: dateTimeLocalToIso(form.publishedAt), eventStartsAt, eventEndsAt };
+      let thumbnailUrl = form.thumbnailUrl;
+      if (coverFile) {
+        const uploaded = await SupabaseService.uploadImage(coverFile, `diary-${crypto.randomUUID()}.${coverFile.type === 'image/png' ? 'png' : coverFile.type === 'image/webp' ? 'webp' : 'jpg'}`);
+        if (!uploaded) throw new Error('Não foi possível enviar a imagem. Tente novamente; seus dados foram mantidos.');
+        thumbnailUrl = uploaded;
+        setForm((current) => ({ ...current, thumbnailUrl }));
+        setCoverFile(null);
+      }
+      const payload = { ...form, thumbnailUrl, publishedAt: dateTimeLocalToIso(form.publishedAt), eventStartsAt, eventEndsAt };
       if (editing) await StudioUpdateService.update(editing.id, payload);
       else await StudioUpdateService.createManual(payload);
       setNotice(editing ? 'Publicação atualizada.' : isEvent ? 'Evento publicado no Diário.' : 'Novidade publicada no Diário.');
-      resetForm();
+      setEditing(null);
+      setCoverFile(null);
+      setEditorOpen(false);
       await reloadFromFirstPage();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar.');
@@ -119,6 +161,7 @@ export default function DiaryAdminPanel() {
   };
 
   const setStatus = async (item: EditableUpdate, status: 'published' | 'rejected') => {
+    if (busy) return;
     setBusy(`${status}-${item.id}`); setError(''); setNotice('');
     try {
       await StudioUpdateService.setStatus(item, status);
@@ -129,6 +172,7 @@ export default function DiaryAdminPanel() {
   };
 
   const remove = async (item: EditableUpdate) => {
+    if (busy) return;
     if (!window.confirm(`Excluir definitivamente “${item.title}”?`)) return;
     setBusy(`delete-${item.id}`); setError(''); setNotice('');
     try { await StudioUpdateService.remove(item.id); await reloadFromFirstPage(); }
@@ -137,6 +181,7 @@ export default function DiaryAdminPanel() {
   };
 
   const sync = async () => {
+    if (busy) return;
     setBusy('sync'); setError(''); setNotice('');
     try {
       const result = await StudioUpdateService.syncNow();
@@ -217,11 +262,20 @@ export default function DiaryAdminPanel() {
               <h4 ref={editorTitleRef} tabIndex={-1} className="font-headline-md text-xl text-parchment outline-none">{editing ? 'Editar publicação' : isEvent ? 'Novo evento' : 'Nova publicação manual'}</h4>
               {editing && <button type="button" onClick={() => resetForm()} className="min-h-11 rounded-xl px-3 text-xs text-on-surface-variant hover:text-parchment">Cancelar edição</button>}
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-xs font-label-caps text-on-surface-variant">Título *<input required maxLength={180} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Autor *<input required maxLength={180} value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Tipo<select value={form.contentType} onChange={(e) => setForm({ ...form, contentType: e.target.value as UpdateContentType })} className={`${inputClass} mt-1.5`}><option value="event">Evento</option><option value="note">Nota</option><option value="video">Vídeo</option><option value="reel">Reel / Short</option><option value="image">Imagem</option><option value="carousel">Carrossel</option></select></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Formato da mídia<select value={form.displayAspect} onChange={(e) => setForm({ ...form, displayAspect: e.target.value as DisplayAspect })} className={`${inputClass} mt-1.5`}><option value="landscape">Horizontal 16:9</option><option value="portrait">Vertical 9:16</option><option value="square">Quadrado 1:1</option></select></label>
+            <fieldset disabled={busy === 'save'} className="min-w-0 space-y-5 disabled:opacity-60">
+            <div className="space-y-2">
+              <p className="text-sm text-parchment">Imagem de capa (opcional)</p>
+              <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={selectCover} className="sr-only" tabIndex={-1} aria-label="Arquivo da imagem de capa" />
+              <button type="button" onClick={() => coverInputRef.current?.click()} aria-label={coverPreview || form.thumbnailUrl ? 'Trocar imagem de capa' : 'Selecionar imagem de capa'} className="group flex min-h-44 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-secondary/45 bg-surface-container p-4 text-parchment hover:border-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary">
+                {coverPreview || form.thumbnailUrl ? <img src={coverPreview || form.thumbnailUrl} alt="Prévia da capa" className="max-h-64 w-full rounded-lg object-contain" /> : <ImagePlus size={40} className="text-secondary" aria-hidden="true" />}
+                <span className="text-base font-semibold">{coverPreview || form.thumbnailUrl ? 'Clique para trocar a imagem' : 'Clique para escolher a imagem'}</span>
+                <span className="text-sm text-on-surface-variant">Da galeria ou do computador · JPG, PNG ou WebP · até 5 MB</span>
+              </button>
+              {(coverFile || form.thumbnailUrl) && <button type="button" onClick={() => { setCoverFile(null); setForm({ ...form, thumbnailUrl: '' }); }} className="min-h-11 rounded-lg px-3 text-sm text-rose-300">Remover imagem</button>}
+            </div>
+            <div>
+              <label className="block text-sm text-on-surface-variant">Título *<input required maxLength={180} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
+
             </div>
             {showEventDates && (
               <fieldset className="min-w-0 rounded-xl border border-secondary/35 px-4 pb-4">
@@ -238,16 +292,24 @@ export default function DiaryAdminPanel() {
                 </div>
               </fieldset>
             )}
+
+            <label className="block text-sm text-on-surface-variant">Descrição (opcional)<textarea maxLength={5000} rows={4} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} className={`${inputClass} mt-1.5 resize-y`} /></label>
+            <details className="rounded-xl border border-surface-variant/45 p-4">
+              <summary className="cursor-pointer text-base text-parchment">Mais opções</summary>
+              <p className="my-3 text-sm text-on-surface-variant">Autor, formato, links e data da publicação. Os valores padrão já permitem publicar.</p>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-xs font-label-caps text-on-surface-variant">Data da publicação *<input required type="datetime-local" value={form.publishedAt} onInput={(e) => setForm({ ...form, publishedAt: e.currentTarget.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Imagem de capa<input type="url" value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Link original<input type="url" value={form.canonicalUrl} onChange={(e) => setForm({ ...form, canonicalUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Data da publicação *<input required type="datetime-local" value={form.publishedAt} onInput={(e) => setForm({ ...form, publishedAt: e.currentTarget.value })} className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Link original<input type="url" value={form.canonicalUrl} onChange={(e) => setForm({ ...form, canonicalUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
               {!showEventDates && locationField}
-              <label className="text-xs font-label-caps text-on-surface-variant">Texto do botão<input maxLength={120} value={form.ctaLabel} onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
-              <label className="text-xs font-label-caps text-on-surface-variant">Destino do botão<input type="url" value={form.ctaUrl} onChange={(e) => setForm({ ...form, ctaUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Texto do botão<input maxLength={120} value={form.ctaLabel} onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Destino do botão<input type="url" value={form.ctaUrl} onChange={(e) => setForm({ ...form, ctaUrl: e.target.value })} placeholder="https://…" className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Autor *<input required maxLength={180} value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} className={`${inputClass} mt-1.5`} /></label>
+              <label className="text-sm text-on-surface-variant">Tipo<select value={form.contentType} onChange={(e) => setForm({ ...form, contentType: e.target.value as UpdateContentType })} className={`${inputClass} mt-1.5`}><option value="event">Evento</option><option value="note">Nota</option><option value="video">Vídeo</option><option value="reel">Reel / Short</option><option value="image">Imagem</option><option value="carousel">Carrossel</option></select></label>
+              <label className="text-sm text-on-surface-variant">Formato da mídia<select value={form.displayAspect} onChange={(e) => setForm({ ...form, displayAspect: e.target.value as DisplayAspect })} className={`${inputClass} mt-1.5`}><option value="landscape">Horizontal 16:9</option><option value="portrait">Vertical 9:16</option><option value="square">Quadrado 1:1</option></select></label>
             </div>
-            <label className="block text-xs font-label-caps text-on-surface-variant">Resumo<textarea maxLength={5000} rows={4} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} className={`${inputClass} mt-1.5 resize-y`} /></label>
-            <button type="submit" disabled={busy === 'save'} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-5 text-xs font-bold text-background disabled:opacity-50"><Check size={16} aria-hidden="true" />{busy === 'save' ? 'Salvando…' : editing ? 'Salvar alterações' : isEvent ? 'Publicar evento' : 'Publicar agora'}</button>
+            </details>
+            <button type="submit" disabled={busy === 'save'} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-5 text-xs font-bold text-background disabled:opacity-50"><Check size={16} aria-hidden="true" />{busy === 'save' ? (coverFile ? 'Enviando imagem…' : 'Salvando…') : editing ? 'Salvar alterações' : isEvent ? 'Publicar evento' : 'Publicar agora'}</button>
+            </fieldset>
           </form>
         )}
       </section>
