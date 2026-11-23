@@ -92,52 +92,12 @@ const fetchImage = async (sourceUrl: string, origin: string): Promise<Buffer | n
   }
 };
 
-const escapeXml = (value: string) => value
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;');
-
-const titleLines = (title: string): string[] => {
-  const words = title.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-  const lines: string[] = [];
-  for (const word of words) {
-    const current = lines[lines.length - 1];
-    if (!current || (current.length + word.length + 1 > 32 && lines.length < 2)) lines.push(word);
-    else lines[lines.length - 1] = `${current} ${word}`;
-  }
-  if (lines.length > 2) lines.splice(2);
-  if (lines[1]?.length > 38) lines[1] = `${lines[1].slice(0, 37).trimEnd()}…`;
-  return lines.length ? lines : ['Studio SenhorEle'];
-};
-
-const overlaySvg = (title: string, tag: string) => {
-  const lines = titleLines(title);
-  return Buffer.from(`
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="34%" stop-color="#07100b" stop-opacity="0"/>
-          <stop offset="100%" stop-color="#07100b" stop-opacity="0.96"/>
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="630" fill="url(#shade)"/>
-      <rect x="64" y="438" width="${Math.max(150, tag.length * 15 + 44)}" height="42" rx="12" fill="#b08332"/>
-      <text x="86" y="466" fill="#101611" font-size="20" font-weight="700" font-family="Arial, sans-serif" letter-spacing="2">${escapeXml(tag.toUpperCase())}</text>
-      ${lines.map((line, index) => `<text x="64" y="${535 + index * 58}" fill="#f2ead8" font-size="${lines.length === 1 ? 54 : 48}" font-weight="700" font-family="Georgia, serif">${escapeXml(line)}</text>`).join('')}
-      <text x="1136" y="582" text-anchor="end" fill="#d7c59b" font-size="20" font-family="Arial, sans-serif">Studio SenhorEle</text>
-    </svg>
-  `);
-};
-
-const renderCard = async (res: any, sourceUrl: string | null, title: string, tag: string, origin: string, preserveImage = false): Promise<void> => {
+const renderCard = async (res: any, sourceUrl: string | null, _title: string, _tag: string, origin: string, preserveImage = false): Promise<void> => {
   const source = sourceUrl ? await fetchImage(sourceUrl, origin) : null;
   const base = source
     ? sharp(source).rotate().resize(1200, 630, { fit: preserveImage ? 'contain' : 'cover', position: 'centre', background: '#142019' })
     : sharp({ create: { width: 1200, height: 630, channels: 3, background: '#142019' } });
   const body = await base
-    .composite([{ input: overlaySvg(title, tag), top: 0, left: 0 }])
     .jpeg({ quality: 84, progressive: true, chromaSubsampling: '4:2:0' })
     .toBuffer();
 
@@ -145,7 +105,7 @@ const renderCard = async (res: any, sourceUrl: string | null, title: string, tag
   res.setHeader('Content-Type', 'image/jpeg');
   res.setHeader('Content-Length', String(body.length));
   res.setHeader('Content-Disposition', 'inline');
-  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=3600, stale-while-revalidate=300');
   res.setHeader('X-Robots-Tag', 'all');
   res.end(body);
 };

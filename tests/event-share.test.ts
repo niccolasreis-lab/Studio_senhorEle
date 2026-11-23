@@ -33,7 +33,7 @@ describe('event share links', () => {
     const html = String(res.end.mock.calls[0][0]);
     expect(res.statusCode).toBe(200);
     expect(html).toContain(`window.location.replace("${origin}/?d=${shareId}#diario")`);
-    expect(html).toContain(`property="og:image" content="${origin}/api/og-image?id=${shareId}&amp;v=4"`);
+    expect(html).toContain(`property="og:image" content="${origin}/api/og-image?id=${shareId}&amp;v=5"`);
     expect(html).toContain(`src="${imageUrl}"`);
     expect(html).toContain('23 de novembro de 2026');
     expect(html).toContain('São Paulo');
@@ -66,6 +66,13 @@ describe('event share links', () => {
     // Letterboxing retains the whole vertical image rather than cropping its top/bottom.
     expect(data[0]).toBeLessThan(50);
     expect(data[(600 * 3)]).toBeGreaterThan(200);
+    // The photo stays clean even where the old badge/title/brand used to be drawn.
+    for (const [x, y] of [[600, 450], [600, 535], [600, 610]]) {
+      const offset = (y * 1200 + x) * 3;
+      expect(data[offset]).toBeGreaterThan(240);
+      expect(data[offset + 1]).toBeLessThan(15);
+      expect(data[offset + 2]).toBeLessThan(15);
+    }
   });
 
   it('resolves exact event URLs even with an older SPA navigation cache', () => {

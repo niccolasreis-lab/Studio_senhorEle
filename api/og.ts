@@ -270,7 +270,7 @@ const renderPage = (result: ShareItemResult, origin: string): string => {
   const description = escapeHtml(result.description || 'Studio Senhor Ele — clique para ver o conteúdo.');
   const sourceImage = absolutize(result.image || DEFAULT_IMAGE, origin);
   const image = result.kind === 'vehicle' || result.kind === 'guest' || result.kind === 'diary'
-    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=4`
+    ? `${origin}/api/og-image?id=${encodeURIComponent(result.shareId)}&v=5`
     : sourceImage;
   const imageAttribute = escapeHtml(image);
   const shareUrl = absolutize(`/p/${result.shareId}`, origin);
